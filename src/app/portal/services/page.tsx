@@ -43,60 +43,71 @@ export default async function ServicesPage() {
     <div className="space-y-10">
       <WelcomeModal firstName={firstName} />
 
-      {/* ══════════ HERO HEADER ══════════ */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#002855] via-[#001d42] to-[#000e20] p-8 md:p-10">
-        {/* Geometric background pattern */}
-        <div className="absolute inset-0 opacity-[0.04]" style={{
-          backgroundImage: `repeating-linear-gradient(45deg, #F2A900 0px, #F2A900 1px, transparent 1px, transparent 40px),
-                            repeating-linear-gradient(-45deg, #F2A900 0px, #F2A900 1px, transparent 1px, transparent 40px)`
+      {/* ══════════ HERO HEADER — Warm cream/gold editorial ══════════ */}
+      <div className="relative overflow-hidden rounded-2xl p-8 md:p-10 bg-gradient-to-br from-[#FFF8EC] via-[#FFF3DC] to-[#FDEBD0]">
+        {/* Decorative diagonal lines */}
+        <div className="absolute inset-0 opacity-[0.06]" style={{
+          backgroundImage: `repeating-linear-gradient(135deg, #BE1E2D 0px, #BE1E2D 1px, transparent 1px, transparent 50px),
+                            repeating-linear-gradient(45deg, #002855 0px, #002855 1px, transparent 1px, transparent 50px)`
         }} />
-        {/* Radial glow */}
-        <div className="absolute -top-20 -right-20 w-80 h-80 bg-[#F2A900]/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-16 -left-16 w-60 h-60 bg-[#F2A900]/5 rounded-full blur-2xl" />
+        {/* Red glow top-right */}
+        <div className="absolute -top-16 -right-16 w-64 h-64 bg-[#BE1E2D]/8 rounded-full blur-3xl" />
+        {/* Blue glow bottom-left */}
+        <div className="absolute -bottom-12 -left-12 w-52 h-52 bg-[#002855]/6 rounded-full blur-2xl" />
+        {/* Gold accent circle */}
+        <div className="absolute top-6 right-8 w-20 h-20 border-2 border-[#F2A900]/20 rounded-full" />
+        <div className="absolute bottom-4 right-24 w-8 h-8 border border-[#BE1E2D]/15 rotate-45" />
 
         <div className="relative z-10">
           {/* Top label */}
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-1.5 mb-5">
-            <Sparkles className="w-3.5 h-3.5 text-[#F2A900]" />
-            <span className="text-[11px] font-semibold text-[#F2A900] uppercase tracking-[0.15em]">UsaLatinoPrime</span>
+          <div className="inline-flex items-center gap-2 bg-white/70 backdrop-blur-sm rounded-full px-4 py-1.5 mb-5 shadow-sm border border-[#F2A900]/20">
+            <Sparkles className="w-3.5 h-3.5 text-[#BE1E2D]" />
+            <span className="text-[11px] font-bold text-[#002855] uppercase tracking-[0.15em]">UsaLatinoPrime</span>
           </div>
 
-          <h1 className="text-2xl md:text-3xl font-bold text-white leading-tight">
+          <h1 className="text-2xl md:text-3xl font-bold leading-tight text-[#002855]">
             {firstName ? (
-              <>{firstName}, <span className="text-[#F2A900]">estos son</span> nuestros servicios</>
+              <>{firstName}, <span className="text-[#BE1E2D]">estos son</span> nuestros servicios</>
             ) : (
-              <>Nuestros <span className="text-[#F2A900]">Servicios</span> Profesionales</>
+              <>Nuestros <span className="text-[#BE1E2D]">Servicios</span> Profesionales</>
             )}
           </h1>
-          <p className="text-blue-100/80 mt-2 max-w-lg text-sm">
+          <p className="text-[#002855]/60 mt-2 max-w-lg text-sm">
             Seleccione el servicio que necesita y lo guiaremos paso a paso en todo el proceso
           </p>
 
-          {/* Gold divider */}
-          <div className="mt-6 flex items-center gap-3">
-            <div className="h-px flex-1 bg-gradient-to-r from-[#F2A900]/60 to-transparent" />
-            <div className="w-1.5 h-1.5 rotate-45 bg-[#F2A900]" />
+          {/* Tricolor divider — red, gold, blue */}
+          <div className="mt-6 flex items-center gap-2">
+            <div className="h-0.5 w-12 bg-[#BE1E2D] rounded-full" />
+            <div className="h-0.5 w-8 bg-[#F2A900] rounded-full" />
+            <div className="h-0.5 w-16 bg-[#002855] rounded-full" />
+            <div className="w-1.5 h-1.5 rotate-45 bg-[#BE1E2D]" />
           </div>
         </div>
       </div>
 
-      {/* ══════════ TRUST BANNER ══════════ */}
-      <div className="relative svc-trust-glow rounded-xl overflow-hidden">
-        <div className="relative z-10 bg-gradient-to-r from-[#002855] via-[#002855] to-[#001a3a] rounded-xl p-5 flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
-          {[
-            { icon: CheckCircle2, text: 'Consulta Gratuita', accent: false },
-            { icon: Users, text: '+500 Familias Ayudadas', accent: false },
-            { icon: Shield, text: '100% Confidencial', accent: false },
-            { icon: Award, text: 'Atención Personalizada', accent: true },
-          ].map(({ icon: Icon, text, accent }, i) => (
-            <div key={i} className="flex items-center gap-2.5 group/trust">
-              <div className={`p-1.5 rounded-lg ${accent ? 'bg-[#F2A900]/20' : 'bg-white/10'} group-hover/trust:bg-[#F2A900]/20 transition-colors`}>
-                <Icon className="w-4 h-4 text-[#F2A900]" />
+      {/* ══════════ TRUST BANNER — White glass cards ══════════ */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { icon: CheckCircle2, text: 'Consulta Gratuita',       color: '#BE1E2D', bgFrom: 'from-red-50',    bgTo: 'to-rose-50',   borderColor: 'border-red-200/50' },
+          { icon: Users,        text: '+500 Familias Ayudadas',  color: '#002855', bgFrom: 'from-blue-50',   bgTo: 'to-sky-50',    borderColor: 'border-blue-200/50' },
+          { icon: Shield,       text: '100% Confidencial',       color: '#F2A900', bgFrom: 'from-amber-50',  bgTo: 'to-yellow-50', borderColor: 'border-amber-200/50' },
+          { icon: Award,        text: 'Atención Personalizada',  color: '#BE1E2D', bgFrom: 'from-rose-50',   bgTo: 'to-amber-50',  borderColor: 'border-rose-200/50' },
+        ].map(({ icon: Icon, text, color, bgFrom, bgTo, borderColor }, i) => (
+          <div key={i} className={`group/trust relative overflow-hidden bg-gradient-to-br ${bgFrom} ${bgTo} rounded-xl p-4 border ${borderColor} hover:shadow-md transition-all duration-300`}>
+            {/* Top accent bar */}
+            <div className="absolute top-0 left-0 right-0 h-1 rounded-t-xl" style={{ backgroundColor: color }} />
+            <div className="flex flex-col items-center text-center gap-2.5 pt-1">
+              <div
+                className="p-2.5 rounded-xl transition-transform duration-300 group-hover/trust:scale-110"
+                style={{ backgroundColor: `${color}12` }}
+              >
+                <Icon className="w-5 h-5" style={{ color }} />
               </div>
-              <span className="text-sm font-medium text-white/90">{text}</span>
+              <span className="text-xs font-bold text-gray-700 leading-tight">{text}</span>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
 
       {/* ══════════ FEATURED SERVICES ══════════ */}
