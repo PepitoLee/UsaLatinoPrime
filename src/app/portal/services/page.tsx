@@ -13,15 +13,15 @@ const iconMap: Record<string, any> = {
 
 const featuredSlugs = ['cambio-de-corte', 'visa-juvenil']
 
-// Utah-inspired color palette per service
-const serviceColors: Record<string, { bg: string; bgHover: string; icon: string; iconText: string; accent: string; bar: string; badge: string; badgeText: string }> = {
-  'asilo-afirmativo':    { bg: 'from-[#002855]/6 to-[#002855]/2',   bgHover: 'group-hover:from-[#002855] group-hover:to-[#001a3a]',    icon: 'text-[#002855]', iconText: 'group-hover:text-white',       accent: '#002855', bar: 'bg-[#002855]',                                       badge: 'bg-[#002855]/10 border-[#002855]/20', badgeText: 'text-[#002855]' },
-  'asilo-defensivo':     { bg: 'from-[#BE1E2D]/8 to-[#BE1E2D]/2',   bgHover: 'group-hover:from-[#BE1E2D] group-hover:to-[#8B1621]',    icon: 'text-[#BE1E2D]', iconText: 'group-hover:text-white',       accent: '#BE1E2D', bar: 'bg-[#BE1E2D]',                                       badge: 'bg-[#BE1E2D]/10 border-[#BE1E2D]/20', badgeText: 'text-[#BE1E2D]' },
-  'taxes':               { bg: 'from-[#F2A900]/10 to-[#F2A900]/3',  bgHover: 'group-hover:from-[#F2A900] group-hover:to-[#c98d00]',    icon: 'text-[#9a6d00]', iconText: 'group-hover:text-[#002855]',   accent: '#F2A900', bar: 'bg-[#F2A900]',                                       badge: 'bg-[#F2A900]/10 border-[#F2A900]/20', badgeText: 'text-[#9a6d00]' },
-  'itin-number':         { bg: 'from-[#002855]/6 to-[#1a4a7a]/3',   bgHover: 'group-hover:from-[#1a4a7a] group-hover:to-[#002855]',    icon: 'text-[#1a4a7a]', iconText: 'group-hover:text-[#F2A900]',   accent: '#1a4a7a', bar: 'bg-gradient-to-r from-[#002855] to-[#1a4a7a]',       badge: 'bg-[#1a4a7a]/10 border-[#1a4a7a]/20', badgeText: 'text-[#1a4a7a]' },
-  'ajuste-de-estatus':   { bg: 'from-[#BE1E2D]/6 to-[#F2A900]/4',   bgHover: 'group-hover:from-[#BE1E2D] group-hover:to-[#002855]',    icon: 'text-[#BE1E2D]', iconText: 'group-hover:text-[#F2A900]',   accent: '#BE1E2D', bar: 'bg-gradient-to-r from-[#BE1E2D] to-[#F2A900]',       badge: 'bg-[#BE1E2D]/10 border-[#BE1E2D]/20', badgeText: 'text-[#BE1E2D]' },
-  'mociones':            { bg: 'from-[#F2A900]/8 to-[#002855]/4',   bgHover: 'group-hover:from-[#002855] group-hover:to-[#F2A900]/80', icon: 'text-[#002855]', iconText: 'group-hover:text-[#F2A900]',   accent: '#002855', bar: 'bg-gradient-to-r from-[#F2A900] to-[#002855]',       badge: 'bg-[#002855]/10 border-[#002855]/20', badgeText: 'text-[#002855]' },
-  'licencia-de-conducir':{ bg: 'from-[#BE1E2D]/5 to-[#BE1E2D]/2',   bgHover: 'group-hover:from-[#BE1E2D]/90 group-hover:to-[#002855]', icon: 'text-[#BE1E2D]', iconText: 'group-hover:text-white',       accent: '#BE1E2D', bar: 'bg-gradient-to-r from-[#BE1E2D] to-[#002855]',       badge: 'bg-[#BE1E2D]/10 border-[#BE1E2D]/20', badgeText: 'text-[#BE1E2D]' },
+// Utah-inspired color palette per service — pastel backgrounds + vivid accents
+const serviceColors: Record<string, { cardBg: string; cardBorder: string; bg: string; bgHover: string; icon: string; iconText: string; accent: string; bar: string; badge: string; badgeText: string; divider: string }> = {
+  'asilo-afirmativo':    { cardBg: 'bg-gradient-to-br from-blue-50 to-blue-100/50',    cardBorder: 'border-blue-200/60',    divider: 'bg-blue-200/50',    bg: 'from-[#002855]/10 to-[#002855]/4', bgHover: 'group-hover:from-[#002855] group-hover:to-[#001a3a]',    icon: 'text-[#002855]', iconText: 'group-hover:text-white',       accent: '#002855', bar: 'bg-[#002855]',                                       badge: 'bg-[#002855]/10 border-[#002855]/20', badgeText: 'text-[#002855]' },
+  'asilo-defensivo':     { cardBg: 'bg-gradient-to-br from-red-50 to-rose-100/50',     cardBorder: 'border-red-200/60',     divider: 'bg-red-200/50',     bg: 'from-[#BE1E2D]/10 to-[#BE1E2D]/4', bgHover: 'group-hover:from-[#BE1E2D] group-hover:to-[#8B1621]',    icon: 'text-[#BE1E2D]', iconText: 'group-hover:text-white',       accent: '#BE1E2D', bar: 'bg-[#BE1E2D]',                                       badge: 'bg-[#BE1E2D]/10 border-[#BE1E2D]/20', badgeText: 'text-[#BE1E2D]' },
+  'taxes':               { cardBg: 'bg-gradient-to-br from-amber-50 to-yellow-100/50', cardBorder: 'border-amber-200/60',   divider: 'bg-amber-200/50',   bg: 'from-[#F2A900]/12 to-[#F2A900]/4', bgHover: 'group-hover:from-[#F2A900] group-hover:to-[#c98d00]',    icon: 'text-[#9a6d00]', iconText: 'group-hover:text-[#002855]',   accent: '#F2A900', bar: 'bg-[#F2A900]',                                       badge: 'bg-[#F2A900]/10 border-[#F2A900]/20', badgeText: 'text-[#9a6d00]' },
+  'itin-number':         { cardBg: 'bg-gradient-to-br from-sky-50 to-blue-100/40',     cardBorder: 'border-sky-200/60',     divider: 'bg-sky-200/50',     bg: 'from-[#1a4a7a]/10 to-[#1a4a7a]/3', bgHover: 'group-hover:from-[#1a4a7a] group-hover:to-[#002855]',    icon: 'text-[#1a4a7a]', iconText: 'group-hover:text-[#F2A900]',   accent: '#1a4a7a', bar: 'bg-gradient-to-r from-[#002855] to-[#1a4a7a]',       badge: 'bg-[#1a4a7a]/10 border-[#1a4a7a]/20', badgeText: 'text-[#1a4a7a]' },
+  'ajuste-de-estatus':   { cardBg: 'bg-gradient-to-br from-rose-50 to-amber-50/50',    cardBorder: 'border-rose-200/60',    divider: 'bg-rose-200/50',    bg: 'from-[#BE1E2D]/8 to-[#F2A900]/5', bgHover: 'group-hover:from-[#BE1E2D] group-hover:to-[#002855]',    icon: 'text-[#BE1E2D]', iconText: 'group-hover:text-[#F2A900]',   accent: '#BE1E2D', bar: 'bg-gradient-to-r from-[#BE1E2D] to-[#F2A900]',       badge: 'bg-[#BE1E2D]/10 border-[#BE1E2D]/20', badgeText: 'text-[#BE1E2D]' },
+  'mociones':            { cardBg: 'bg-gradient-to-br from-amber-50 to-blue-50/50',    cardBorder: 'border-amber-200/50',   divider: 'bg-amber-200/50',   bg: 'from-[#F2A900]/10 to-[#002855]/5', bgHover: 'group-hover:from-[#002855] group-hover:to-[#F2A900]/80', icon: 'text-[#002855]', iconText: 'group-hover:text-[#F2A900]',   accent: '#002855', bar: 'bg-gradient-to-r from-[#F2A900] to-[#002855]',       badge: 'bg-[#002855]/10 border-[#002855]/20', badgeText: 'text-[#002855]' },
+  'licencia-de-conducir':{ cardBg: 'bg-gradient-to-br from-red-50 to-blue-50/40',      cardBorder: 'border-red-200/50',     divider: 'bg-red-200/50',     bg: 'from-[#BE1E2D]/8 to-[#BE1E2D]/3', bgHover: 'group-hover:from-[#BE1E2D]/90 group-hover:to-[#002855]', icon: 'text-[#BE1E2D]', iconText: 'group-hover:text-white',       accent: '#BE1E2D', bar: 'bg-gradient-to-r from-[#BE1E2D] to-[#002855]',       badge: 'bg-[#BE1E2D]/10 border-[#BE1E2D]/20', badgeText: 'text-[#BE1E2D]' },
 }
 const defaultColors = serviceColors['asilo-afirmativo']
 
@@ -209,7 +209,7 @@ export default async function ServicesPage() {
             return (
               <Link key={service.id} href={`/portal/services/${service.slug}`}>
                 <div
-                  className="svc-card-enter svc-hover-lift group relative bg-white rounded-2xl overflow-hidden cursor-pointer h-full border border-gray-100 hover:border-gray-200"
+                  className={`svc-card-enter svc-hover-lift group relative ${colors.cardBg} rounded-2xl overflow-hidden cursor-pointer h-full border ${colors.cardBorder} hover:shadow-lg`}
                   style={{ animationDelay: `${(i + 2) * 100}ms` }}
                 >
                   {/* Top color bar - thick and vivid */}
@@ -239,7 +239,7 @@ export default async function ServicesPage() {
                             {service.name}
                           </h3>
                           <div
-                            className="svc-arrow-btn mt-0.5 shrink-0 w-7 h-7 rounded-full flex items-center justify-center bg-gray-50"
+                            className="svc-arrow-btn mt-0.5 shrink-0 w-7 h-7 rounded-full flex items-center justify-center bg-white/70"
                             style={{ ['--svc-accent' as any]: colors.accent }}
                           >
                             <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
@@ -253,12 +253,12 @@ export default async function ServicesPage() {
 
                     {/* Colored divider */}
                     <div className="mt-5 mb-4 flex items-center gap-3">
-                      <div className="h-px flex-1 bg-gray-100 group-hover:bg-gray-200 transition-colors" />
+                      <div className={`h-px flex-1 ${colors.divider} transition-colors`} />
                       <div
                         className="w-1.5 h-1.5 rotate-45 transition-all duration-300 group-hover:scale-150"
                         style={{ backgroundColor: colors.accent }}
                       />
-                      <div className="h-px flex-1 bg-gray-100 group-hover:bg-gray-200 transition-colors" />
+                      <div className={`h-px flex-1 ${colors.divider} transition-colors`} />
                     </div>
 
                     {/* Price + Duration */}
@@ -284,9 +284,9 @@ export default async function ServicesPage() {
                           </div>
                         )}
                         {service.estimated_duration && (
-                          <div className="flex items-center gap-1.5 bg-gray-50 rounded-full px-3 py-1">
-                            <Clock className="w-3 h-3 text-gray-400" />
-                            <span className="text-[10px] font-semibold text-gray-500">
+                          <div className="flex items-center gap-1.5 bg-white/60 rounded-full px-3 py-1">
+                            <Clock className="w-3 h-3 text-gray-500" />
+                            <span className="text-[10px] font-semibold text-gray-600">
                               {service.estimated_duration}
                             </span>
                           </div>
