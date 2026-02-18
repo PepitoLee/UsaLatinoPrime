@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge'
 import { WelcomeModal } from '@/components/portal/WelcomeModal'
 import {
   Shield, Gavel, Baby, ArrowRightLeft, Receipt, Hash, CreditCard, FileText, Car,
-  Star, Clock, CheckCircle2, Users, ChevronRight, MapPin, CalendarDays
+  Star, Clock, CheckCircle2, Users, ChevronRight, MapPin, CalendarDays, Navigation,
+  Globe, Sparkles
 } from 'lucide-react'
 
 const iconMap: Record<string, any> = {
@@ -180,65 +181,119 @@ export default async function ServicesPage() {
         </div>
       </div>
 
-      {/* Office Location */}
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold text-gray-900">Visítanos en Persona</h2>
-        <Card className="overflow-hidden border border-gray-200">
-          <div className="grid md:grid-cols-[1fr,280px]">
-            {/* Map */}
-            <div className="h-[250px] md:h-auto min-h-[250px]">
+      {/* Office Location — Premium Design */}
+      <div className="relative">
+        {/* Section Header */}
+        <div className="flex items-center gap-3 mb-5">
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#002855] to-[#001a3a] shadow-lg shadow-[#002855]/20">
+            <MapPin className="w-5 h-5 text-[#F2A900]" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Visítanos en Persona</h2>
+            <p className="text-xs text-gray-500">Atención personalizada en nuestra oficina</p>
+          </div>
+        </div>
+
+        {/* Main Card */}
+        <div className="relative rounded-2xl overflow-hidden shadow-xl shadow-[#002855]/10 border border-[#002855]/10">
+          {/* Top decorative bar */}
+          <div className="h-1.5 bg-gradient-to-r from-[#002855] via-[#F2A900] to-[#002855]" />
+
+          <div className="grid md:grid-cols-[1fr,340px]">
+            {/* Map with overlay frame */}
+            <div className="relative h-[280px] md:h-auto md:min-h-[340px] group">
               <iframe
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3037.5!2d-111.7955!3d40.4285!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x87528a1e0e3fffff%3A0x0!2s10951+N+Town+Center+Dr%2C+Highland%2C+UT+84003!5e0!3m2!1sen!2sus!4v1700000000000"
                 width="100%"
                 height="100%"
-                style={{ border: 0, minHeight: '250px' }}
+                style={{ border: 0, minHeight: '280px' }}
                 allowFullScreen
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 title="Ubicación de UsaLatinoPrime"
+                className="absolute inset-0 w-full h-full"
               />
+              {/* Floating badge on map */}
+              <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-sm rounded-xl px-4 py-2.5 shadow-lg border border-white/50">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-xs font-bold text-[#002855] uppercase tracking-wider">Oficina Abierta</span>
+                </div>
+              </div>
             </div>
 
-            {/* Info panel */}
-            <CardContent className="p-5 flex flex-col justify-center bg-gradient-to-b from-white to-gray-50/50">
-              <div className="space-y-4">
+            {/* Info Panel — Dark elegant design */}
+            <div className="relative bg-gradient-to-br from-[#002855] via-[#002855] to-[#001230] p-7 flex flex-col justify-between overflow-hidden">
+              {/* Background decorations */}
+              <div className="absolute top-0 right-0 w-40 h-40 bg-[#F2A900]/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#F2A900]/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+
+              <div className="relative z-10 space-y-5">
+                {/* Title */}
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sparkles className="w-4 h-4 text-[#F2A900]" />
+                    <span className="text-[10px] font-bold text-[#F2A900] uppercase tracking-[0.2em]">UsaLatinoPrime</span>
+                  </div>
+                  <h3 className="text-white text-xl font-bold leading-tight">
+                    Nuestra Oficina
+                  </h3>
+                  <p className="text-blue-200/60 text-xs mt-1">Highland, Utah</p>
+                </div>
+
+                {/* Address */}
                 <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-[#002855]/5 shrink-0">
-                    <MapPin className="w-5 h-5 text-[#002855]" />
+                  <div className="p-2 rounded-lg bg-white/10 backdrop-blur-sm shrink-0 mt-0.5">
+                    <MapPin className="w-4 h-4 text-[#F2A900]" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900 text-sm">Dirección</p>
-                    <p className="text-sm text-gray-600 mt-0.5">
-                      10951 N. Town Center Drive
-                    </p>
-                    <p className="text-sm text-gray-600">Highland, Utah 84003</p>
+                    <p className="text-white font-semibold text-sm">10951 N. Town Center Drive</p>
+                    <p className="text-blue-200/70 text-sm">Highland, Utah 84003</p>
                   </div>
                 </div>
 
+                {/* Hours */}
                 <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-[#002855]/5 shrink-0">
-                    <CalendarDays className="w-5 h-5 text-[#002855]" />
+                  <div className="p-2 rounded-lg bg-white/10 backdrop-blur-sm shrink-0 mt-0.5">
+                    <CalendarDays className="w-4 h-4 text-[#F2A900]" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900 text-sm">Horario</p>
-                    <p className="text-sm text-gray-600 mt-0.5">Lunes a Viernes</p>
-                    <p className="text-sm font-medium text-[#002855]">9:00 AM — 5:00 PM</p>
+                    <p className="text-white font-semibold text-sm">Lunes a Viernes</p>
+                    <p className="text-[#F2A900] font-bold text-sm">9:00 AM — 5:00 PM</p>
                   </div>
                 </div>
 
+                {/* Divider */}
+                <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
+                {/* Quick info tags */}
+                <div className="flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5">
+                    <Globe className="w-3 h-3 text-[#F2A900]" />
+                    <span className="text-[11px] font-medium text-white/90">Atención en Español</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5">
+                    <CheckCircle2 className="w-3 h-3 text-green-400" />
+                    <span className="text-[11px] font-medium text-white/90">Consulta Gratis</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* CTA Button */}
+              <div className="relative z-10 mt-6">
                 <a
                   href="https://www.google.com/maps/search/?api=1&query=10951+N+Town+Center+Drive+Highland+UT+84003"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 w-full mt-2 px-4 py-2.5 bg-[#002855] text-white text-sm font-semibold rounded-lg hover:bg-[#001a3a] transition-colors"
+                  className="group/btn flex items-center justify-center gap-2.5 w-full px-5 py-3.5 bg-gradient-to-r from-[#F2A900] to-[#d4920a] text-[#002855] font-bold text-sm rounded-xl hover:from-[#ffc030] hover:to-[#F2A900] transition-all duration-300 shadow-lg shadow-[#F2A900]/20 hover:shadow-[#F2A900]/40 hover:-translate-y-0.5"
                 >
-                  <MapPin className="w-4 h-4" />
-                  Cómo llegar
+                  <Navigation className="w-4 h-4 group-hover/btn:rotate-45 transition-transform duration-300" />
+                  Obtener Direcciones
                 </a>
               </div>
-            </CardContent>
+            </div>
           </div>
-        </Card>
+        </div>
       </div>
 
       {/* Footer trust */}
