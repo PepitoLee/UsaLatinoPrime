@@ -16,6 +16,8 @@ import {
 import { toast } from 'sonner'
 import { getWorkflow } from '@/lib/workflows'
 import { getContractTemplate } from '@/lib/contracts'
+import { getServiceInfo } from '@/lib/service-info'
+import { ServiceInfoBanner } from '@/components/portal/ServiceInfoBanner'
 import type { ServiceCatalog } from '@/types/database'
 
 interface ServiceDetailProps {
@@ -51,6 +53,7 @@ export function ServiceDetail({ service, userId }: ServiceDetailProps) {
   const hasEligibility = questions && questions.length > 0
   const workflow = getWorkflow(service.slug)
   const contractTemplate = getContractTemplate(service.slug)
+  const serviceInfo = getServiceInfo(service.slug)
 
   function checkEligibility() {
     if (!questions || questions.length === 0) {
@@ -240,6 +243,16 @@ export function ServiceDetail({ service, userId }: ServiceDetailProps) {
           </div>
         </div>
       </div>
+
+      {/* ═══ SERVICE INFO BANNER ═══ */}
+      {serviceInfo && contractTemplate && (
+        <ServiceInfoBanner
+          serviceInfo={serviceInfo}
+          serviceName={service.name}
+          henryFee={contractTemplate.variants[selectedVariantIndex].totalPrice}
+          installments={contractTemplate.installments}
+        />
+      )}
 
       {/* ═══ PRICING CARD ═══ */}
       <div className="relative rounded-2xl border border-[#F2A900]/20 bg-gradient-to-b from-[#FFFDF5] to-white p-6 shadow-lg shadow-[#F2A900]/5">
