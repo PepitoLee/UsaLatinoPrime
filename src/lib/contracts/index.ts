@@ -170,6 +170,25 @@ const contracts: Record<string, ContractTemplate> = {
       'Presentacion electronica (e-file) ante el IRS y autoridad estatal',
     ],
   },
+  'cambio-de-estatus': {
+    installments: true,
+    requiresMinor: false,
+    variants: [
+      { label: 'Individual', totalPrice: 1500 },
+      { label: 'Familiar', totalPrice: 2200 },
+    ],
+    objetoDelContrato:
+      'El CONSULTOR se compromete a brindar asesoria y asistencia en el proceso de Cambio de Estatus Migratorio (de Visa de Turismo B-1/B-2 a Visa de Estudiante F-1) ante el Servicio de Ciudadania e Inmigracion de los Estados Unidos (USCIS), incluyendo la preparacion y presentacion del Formulario I-539 y la coordinacion con la institucion educativa para la obtencion del Formulario I-20.',
+    etapas: [
+      'Evaluacion de elegibilidad y revision del estatus migratorio actual',
+      'Asistencia en la solicitud de admision a escuela certificada por SEVP y obtencion del Formulario I-20',
+      'Orientacion para el pago de la tarifa SEVIS I-901',
+      'Preparacion del Formulario I-539 y documentos de soporte (evidencia financiera, I-20, carta de admision)',
+      'Presentacion de la solicitud ante USCIS',
+      'Seguimiento del caso, preparacion para biometricos y respuesta a solicitudes de evidencia adicional (RFE)',
+      'Asistencia post-aprobacion para activacion del estatus F-1 y registro con el DSO de la escuela',
+    ],
+  },
 }
 
 export function getContractTemplate(slug: string): ContractTemplate | null {

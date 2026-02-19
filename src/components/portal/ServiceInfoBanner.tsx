@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Info, ChevronDown, ChevronUp, DollarSign, Clock,
   ListChecks, AlertTriangle, X, Landmark
@@ -21,7 +21,17 @@ export function ServiceInfoBanner({
   installments,
 }: ServiceInfoBannerProps) {
   const [expanded, setExpanded] = useState(true)
+  const [autoCollapsed, setAutoCollapsed] = useState(false)
   const [showStages, setShowStages] = useState(false)
+
+  // Auto-collapse after 5 seconds so it doesn't take too much space
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setExpanded(false)
+      setAutoCollapsed(true)
+    }, 5000)
+    return () => clearTimeout(timer)
+  }, [])
 
   if (!serviceInfo) return null
 
@@ -49,7 +59,7 @@ export function ServiceInfoBanner({
           </h3>
         </div>
         <button
-          onClick={() => setExpanded(!expanded)}
+          onClick={() => { setExpanded(!expanded); setAutoCollapsed(false) }}
           className="p-1 rounded-md hover:bg-white/10 transition-colors"
         >
           {expanded ? (
@@ -59,6 +69,16 @@ export function ServiceInfoBanner({
           )}
         </button>
       </div>
+
+      {/* Hint when auto-collapsed */}
+      {!expanded && autoCollapsed && (
+        <button
+          onClick={() => { setExpanded(true); setAutoCollapsed(false) }}
+          className="w-full px-5 py-2.5 text-xs text-[#002855]/60 hover:text-[#002855] hover:bg-[#F2A900]/5 transition-colors text-center"
+        >
+          Toque aqui para ver costos, tiempos y detalles del servicio
+        </button>
+      )}
 
       {expanded && (
         <div className="p-5 space-y-5">

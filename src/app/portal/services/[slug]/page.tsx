@@ -21,5 +21,24 @@ export default async function ServiceDetailPage({
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  return <ServiceDetail service={service} userId={user!.id} />
+  // Get user profile name
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('first_name, last_name')
+    .eq('id', user!.id)
+    .single()
+
+  const userName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : ''
+
+  // Check if the user already has a case for this service
+  const { data: existingCase } = await supabase
+    .from('cases')
+    .select('id, access_granted, intake_status')
+    .eq('client_id', user!.id)
+    .eq('service_id', service.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  return <ServiceDetail service={service} userId={user!.id} existingCase={existingCase} userName={userName} />
 }

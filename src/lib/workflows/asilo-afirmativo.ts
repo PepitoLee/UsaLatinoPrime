@@ -198,9 +198,23 @@ export const asiloAfirmativoSteps: WorkflowStep[] = [
   {
     step: 4,
     title: 'Historial de Residencia y Empleo',
-    description: 'Parte A.IV — Direcciones, empleos y educación en los últimos 5 años',
+    description: 'Parte A.IV — Direcciones, empleos, educación y familiares',
     type: 'form',
     fields: [
+      {
+        key: 'last_address_before_us',
+        label: 'Última dirección antes de venir a EE.UU.',
+        type: 'address_group',
+        helper: 'La dirección donde vivía en su país antes de llegar a Estados Unidos',
+        subfields: [
+          { key: 'street', label: 'Calle', type: 'text' },
+          { key: 'city', label: 'Ciudad', type: 'text' },
+          { key: 'state', label: 'Departamento / Estado / Provincia', type: 'text' },
+          { key: 'country', label: 'País', type: 'country_select' },
+          { key: 'from', label: 'Desde', type: 'month_year' },
+          { key: 'to', label: 'Hasta', type: 'month_year_or_present' },
+        ],
+      },
       {
         key: 'residences_last_5_years',
         label: 'Residencias en los últimos 5 años',
@@ -237,6 +251,29 @@ export const asiloAfirmativoSteps: WorkflowStep[] = [
           { key: 'edu_location', label: 'Ubicación', type: 'text' },
           { key: 'edu_from', label: 'Desde', type: 'month_year' },
           { key: 'edu_to', label: 'Hasta', type: 'month_year_or_present' },
+        ],
+      },
+      // Mother
+      { key: 'mother_name', label: 'Nombre completo de la madre (Apellido Nombre)', type: 'text' },
+      { key: 'mother_country_of_birth', label: 'País de nacimiento de la madre', type: 'country_select' },
+      { key: 'mother_deceased', label: '¿La madre ha fallecido?', type: 'boolean' },
+      { key: 'mother_current_location', label: 'Ubicación actual de la madre', type: 'text', conditional: 'mother_deceased === false' },
+      // Father
+      { key: 'father_name', label: 'Nombre completo del padre (Apellido Nombre)', type: 'text' },
+      { key: 'father_country_of_birth', label: 'País de nacimiento del padre', type: 'country_select' },
+      { key: 'father_deceased', label: '¿El padre ha fallecido?', type: 'boolean' },
+      { key: 'father_current_location', label: 'Ubicación actual del padre', type: 'text', conditional: 'father_deceased === false' },
+      // Siblings
+      {
+        key: 'siblings',
+        label: 'Hermanos/as',
+        type: 'repeatable_group',
+        helper: 'Incluya todos sus hermanos y hermanas',
+        subfields: [
+          { key: 'sibling_name', label: 'Nombre completo (Apellido Nombre)', type: 'text' },
+          { key: 'sibling_country_of_birth', label: 'País de nacimiento', type: 'country_select' },
+          { key: 'sibling_deceased', label: '¿Ha fallecido?', type: 'boolean' },
+          { key: 'sibling_current_location', label: 'Ubicación actual', type: 'text' },
         ],
       },
     ],

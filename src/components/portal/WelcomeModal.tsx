@@ -12,24 +12,29 @@ import { Shield, Heart, FileCheck, ArrowRight, Star, Scale } from 'lucide-react'
 
 interface WelcomeModalProps {
   firstName: string
+  userId?: string
 }
 
-export function WelcomeModal({ firstName }: WelcomeModalProps) {
+export function WelcomeModal({ firstName, userId }: WelcomeModalProps) {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState(0)
 
+  const storageKey = userId ? `ulp_welcome_shown-${userId}` : 'ulp_welcome_shown'
+
   useEffect(() => {
-    const dismissed = localStorage.getItem('ulp_welcome_shown')
+    const dismissed = localStorage.getItem(storageKey)
     if (!dismissed) {
       // Small delay for the page to settle
       const timer = setTimeout(() => setOpen(true), 800)
       return () => clearTimeout(timer)
     }
-  }, [])
+  }, [storageKey])
 
   function handleClose() {
-    localStorage.setItem('ulp_welcome_shown', 'true')
+    localStorage.setItem(storageKey, 'true')
     setOpen(false)
+    // Signal the OnboardingTour that it can start
+    window.dispatchEvent(new CustomEvent('welcome-complete'))
   }
 
   function handleNext() {

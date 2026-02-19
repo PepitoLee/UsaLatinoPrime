@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react'
 
 const slogans = [
-  'Empieza a cambiar tu vida hoy',
-  'Tu sueño americano comienza aquí',
-  'Regularízate con confianza',
+  'Tu tranquilidad migratoria empieza aquí',
+  'Arregla tus papeles sin estrés ni confusiones',
+  'Porque tu familia merece lo mejor — hazlo fácil',
 ]
 
 export function AnimatedHero() {
@@ -67,13 +67,14 @@ export function AnimatedHero() {
       </p>
 
       {/* Subtitle */}
-      <p
-        className={`mt-2 text-sm text-blue-300/70 tracking-wide uppercase transition-all duration-700 delay-700 ${
+      <div
+        className={`mt-2 text-base text-blue-200/90 tracking-wide transition-all duration-700 delay-700 ${
           mounted ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        Portal de Servicios Migratorios
-      </p>
+        <p className="font-semibold text-blue-100">Te guiamos con tus documentos, paso a paso</p>
+        <p className="mt-0.5">Simple, en español y desde tu celular 📱</p>
+      </div>
     </div>
   )
 }

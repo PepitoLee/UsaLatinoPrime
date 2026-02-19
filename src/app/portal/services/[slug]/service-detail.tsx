@@ -11,7 +11,8 @@ import { Label } from '@/components/ui/label'
 import {
   AlertCircle, CheckCircle, ArrowRight, Download,
   MessageCircle, FileText, Shield, Sparkles, Clock,
-  CreditCard, PenLine,
+  CreditCard, PenLine, Loader2, Lock, PartyPopper,
+  Plus, X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getWorkflow } from '@/lib/workflows'
@@ -23,28 +24,54 @@ import type { ServiceCatalog } from '@/types/database'
 interface ServiceDetailProps {
   service: ServiceCatalog
   userId: string
+  existingCase?: { id: string; access_granted: boolean; intake_status: string } | null
+  userName?: string
 }
 
 type FlowStep = 'eligibility' | 'contract_form' | 'contract_ready'
 
-export function ServiceDetail({ service, userId }: ServiceDetailProps) {
+export function ServiceDetail({ service, userId, existingCase, userName }: ServiceDetailProps) {
   const [eligibilityAnswers, setEligibilityAnswers] = useState<Record<string, any>>({})
   const [eligibilityPassed, setEligibilityPassed] = useState<boolean | null>(null)
   const [failMessages, setFailMessages] = useState<string[]>([])
   const [creating, setCreating] = useState(false)
-  const [flowStep, setFlowStep] = useState<FlowStep>('eligibility')
+  const [flowStep, setFlowStep] = useState<FlowStep>(existingCase ? 'contract_ready' : 'eligibility')
   const [contractForm, setContractForm] = useState({
     clientFullName: '',
     clientPassport: '',
     clientDOB: '',
-    minorFullName: '',
-    minorDOB: '',
-    minorBirthplace: '',
-    minorPassport: '',
     clientSignature: '',
   })
-  const [contractGenerated, setContractGenerated] = useState(false)
+  const [minors, setMinors] = useState<{ fullName: string; dob: string; birthplace: string; passport: string }[]>([
+    { fullName: '', dob: '', birthplace: '', passport: '' },
+  ])
+  const [contractGenerated, setContractGenerated] = useState(!!existingCase)
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0)
+  const [paymentLoading, setPaymentLoading] = useState(false)
+  const [creditPhase, setCreditPhase] = useState<'idle' | 'checking' | 'approved'>('idle')
+  const [showConfetti, setShowConfetti] = useState(false)
+
+  function addMinor() {
+    setMinors([...minors, { fullName: '', dob: '', birthplace: '', passport: '' }])
+  }
+
+  function removeMinor(index: number) {
+    if (minors.length <= 1) return
+    setMinors(minors.filter((_, i) => i !== index))
+  }
+
+  function updateMinor(index: number, field: 'fullName' | 'dob' | 'birthplace' | 'passport', value: string) {
+    setMinors(minors.map((m, i) => i === index ? { ...m, [field]: value } : m))
+  }
+
+  function handleCreditApproval() {
+    setCreditPhase('checking')
+    setTimeout(() => {
+      setCreditPhase('approved')
+      setShowConfetti(true)
+      setTimeout(() => setShowConfetti(false), 3500)
+    }, 1800)
+  }
 
   const router = useRouter()
   const supabase = createClient()
@@ -85,9 +112,12 @@ export function ServiceDetail({ service, userId }: ServiceDetailProps) {
       toast.error('Completa todos los campos requeridos')
       return
     }
-    if (contractTemplate.requiresMinor && (!contractForm.minorFullName.trim() || !contractForm.minorDOB)) {
-      toast.error('Completa los datos del menor beneficiario')
-      return
+    if (contractTemplate.requiresMinor) {
+      const invalidMinor = minors.some(m => !m.fullName.trim() || !m.dob)
+      if (invalidMinor) {
+        toast.error('Complete nombre y fecha de nacimiento de todos los menores')
+        return
+      }
     }
     if (!contractForm.clientSignature.trim()) {
       toast.error('Debe firmar el contrato escribiendo su nombre completo')
@@ -112,10 +142,12 @@ export function ServiceDetail({ service, userId }: ServiceDetailProps) {
         clientPassport: contractForm.clientPassport.trim(),
         clientDOB: contractForm.clientDOB,
         ...(contractTemplate.requiresMinor && {
-          minorFullName: contractForm.minorFullName.trim(),
-          minorDOB: contractForm.minorDOB,
-          minorBirthplace: contractForm.minorBirthplace.trim(),
-          minorPassport: contractForm.minorPassport.trim(),
+          minors: minors.map(m => ({
+            fullName: m.fullName.trim(),
+            dob: m.dob,
+            birthplace: m.birthplace.trim(),
+            passport: m.passport.trim(),
+          })),
         }),
         clientSignature: contractForm.clientSignature.trim(),
         objetoDelContrato: contractTemplate.objetoDelContrato,
@@ -135,6 +167,64 @@ export function ServiceDetail({ service, userId }: ServiceDetailProps) {
     } catch (error: any) {
       console.error('PDF generation error:', error)
       toast.error(`Error al generar el PDF: ${error.message}`)
+    }
+  }
+
+  async function handleWhatsAppPayment() {
+    if (!contractTemplate) return
+    setPaymentLoading(true)
+    try {
+      const variant = contractTemplate.variants[selectedVariantIndex]
+
+      // Create case if it doesn't exist
+      let targetCaseId = existingCase?.id
+      if (!targetCaseId) {
+        const { data: newCase, error } = await supabase
+          .from('cases')
+          .insert({
+            case_number: '',
+            client_id: userId,
+            service_id: service.id,
+            intake_status: 'in_progress',
+            total_cost: variant.totalPrice,
+            total_steps: workflow?.steps.length || 0,
+            form_data: {},
+            current_step: 0,
+          })
+          .select()
+          .single()
+
+        if (error) throw error
+        targetCaseId = newCase.id
+
+        await supabase.from('case_activity').insert({
+          case_id: newCase.id,
+          actor_id: userId,
+          action: 'case_created',
+          description: `Caso creado para ${service.name} - Pago por WhatsApp`,
+        })
+      }
+
+      // Notificar a Henry que un cliente quiere pagar por WhatsApp
+      await fetch('/api/notifications/notify-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          case_id: targetCaseId,
+          title: 'Nuevo Pago por WhatsApp',
+          message: `${contractForm.clientFullName || userName} quiere pagar ${service.name} ($${variant.totalPrice.toLocaleString()}) por WhatsApp. Crear plan de pago.`,
+          type: 'payment',
+        }),
+      })
+
+      // Open WhatsApp
+      window.open(getWhatsAppURL(), '_blank')
+      toast.success('Se abrio WhatsApp. Henry le dara acceso una vez confirmado el pago.')
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Error al procesar. Intente de nuevo.')
+    } finally {
+      setPaymentLoading(false)
     }
   }
 
@@ -190,6 +280,76 @@ export function ServiceDetail({ service, userId }: ServiceDetailProps) {
       toast.error('Error al crear el caso')
     } finally {
       setCreating(false)
+    }
+  }
+
+  async function handleStripePayment(caseId?: string) {
+    if (!contractTemplate) return
+    setPaymentLoading(true)
+    try {
+      const variant = contractTemplate.variants[selectedVariantIndex]
+      let targetCaseId = caseId
+
+      // If no case exists yet, create one first
+      if (!targetCaseId) {
+        const { data: newCase, error } = await supabase
+          .from('cases')
+          .insert({
+            case_number: '',
+            client_id: userId,
+            service_id: service.id,
+            intake_status: 'in_progress',
+            total_cost: variant.totalPrice,
+            total_steps: workflow?.steps.length || 0,
+            form_data: {},
+            current_step: 0,
+          })
+          .select()
+          .single()
+
+        if (error) throw error
+        targetCaseId = newCase.id
+
+        await supabase.from('case_activity').insert({
+          case_id: newCase.id,
+          actor_id: userId,
+          action: 'case_created',
+          description: `Caso creado para ${service.name}`,
+        })
+      }
+
+      const response = await fetch('/api/payments/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          case_id: targetCaseId,
+          service_name: service.name,
+          variant_label: variant.label,
+          total_price: variant.totalPrice,
+          installments: contractTemplate.installments,
+          installment_number: 1,
+          total_installments: contractTemplate.installments ? 10 : 1,
+          service_slug: service.slug,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al crear sesion de pago')
+      }
+
+      // Redirect to Stripe Checkout
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        throw new Error('No se recibio URL de pago')
+      }
+    } catch (error: any) {
+      console.error('Stripe payment error:', error)
+      toast.error(error.message || 'Error al procesar el pago')
+    } finally {
+      setPaymentLoading(false)
     }
   }
 
@@ -292,14 +452,67 @@ export function ServiceDetail({ service, userId }: ServiceDetailProps) {
                 </label>
               ))}
             </RadioGroup>
-            <div className="flex items-center gap-2 pt-1">
-              <Sparkles className="w-3.5 h-3.5 text-[#F2A900]" />
+            <div className="pt-2">
               {contractTemplate.installments ? (
-                <p className="text-sm text-[#002855]/60">
-                  10 cuotas mensuales de <span className="font-semibold text-[#002855]">${Math.round(contractTemplate.variants[selectedVariantIndex].totalPrice / 10).toLocaleString()}</span>
-                </p>
+                <div className="credit-check-container">
+                  {creditPhase === 'idle' && (
+                    <button
+                      onClick={handleCreditApproval}
+                      className="group relative w-full rounded-2xl border-2 border-dashed border-[#F2A900]/50 hover:border-[#F2A900] bg-[#FFFBF0] hover:bg-[#FFF8E1] transition-all duration-300 cursor-pointer overflow-hidden"
+                    >
+                      <div className="px-4 py-4 flex items-center gap-4">
+                        <div className="shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-[#F2A900] to-[#E09800] flex items-center justify-center shadow-md shadow-[#F2A900]/20 group-hover:shadow-lg group-hover:shadow-[#F2A900]/30 transition-shadow">
+                          <CreditCard className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <p className="text-[13px] font-bold text-[#002855] leading-tight">
+                            Plan de cuotas disponible
+                          </p>
+                          <p className="text-xs text-[#002855]/50 mt-0.5">
+                            Toque para verificar si califica — <span className="font-semibold text-[#F2A900]">10 pagos de ${Math.round(contractTemplate.variants[selectedVariantIndex].totalPrice / 10).toLocaleString()}/mes</span>
+                          </p>
+                        </div>
+                        <div className="shrink-0 w-8 h-8 rounded-full bg-[#002855] flex items-center justify-center group-hover:bg-[#003570] transition-colors">
+                          <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                      </div>
+                    </button>
+                  )}
+                  {creditPhase === 'checking' && (
+                    <div className="w-full rounded-2xl border-2 border-[#002855]/20 bg-[#F8FBFF] px-4 py-4 animate-in fade-in duration-200">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Loader2 className="w-5 h-5 text-[#002855] animate-spin shrink-0" />
+                        <p className="text-sm font-semibold text-[#002855]">Verificando elegibilidad...</p>
+                      </div>
+                      <div className="h-2 rounded-full bg-[#002855]/10 overflow-hidden">
+                        <div className="h-full rounded-full bg-gradient-to-r from-[#002855] to-[#F2A900]" style={{ animation: 'credit-progress 1.6s ease-in-out forwards' }} />
+                      </div>
+                    </div>
+                  )}
+                  {creditPhase === 'approved' && (
+                    <div className="w-full rounded-2xl border-2 border-emerald-400/60 bg-gradient-to-r from-emerald-50 to-green-50 px-4 py-4 animate-in zoom-in-95 fade-in duration-500">
+                      <div className="flex items-center gap-3">
+                        <div className="shrink-0 w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center credit-check-pop">
+                          <CheckCircle className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-bold text-emerald-700">Aprobado</p>
+                            <PartyPopper className="w-4 h-4 text-[#F2A900] credit-party-icon" />
+                          </div>
+                          <p className="text-xs text-emerald-600/80 mt-0.5 font-medium">
+                            10 cuotas de <span className="font-bold">${Math.round(contractTemplate.variants[selectedVariantIndex].totalPrice / 10).toLocaleString()}/mes</span> — sin intereses
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
-                <p className="text-sm text-[#002855]/60">Pago unico</p>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-[#F2A900]" />
+                  <p className="text-sm text-[#002855]/60">Pago unico</p>
+                </div>
               )}
             </div>
           </div>
@@ -312,14 +525,67 @@ export function ServiceDetail({ service, userId }: ServiceDetailProps) {
               <p className="text-4xl font-bold text-[#002855] tracking-tight">
                 ${contractTemplate ? contractTemplate.variants[0].totalPrice.toLocaleString() : service.base_price.toLocaleString()}
               </p>
-              <div className="flex items-center gap-2 mt-2">
-                <Sparkles className="w-3.5 h-3.5 text-[#F2A900]" />
+              <div className="mt-3">
                 {contractTemplate?.installments ? (
-                  <p className="text-sm text-[#002855]/60">
-                    10 cuotas de <span className="font-semibold">${Math.round(contractTemplate.variants[0].totalPrice / 10).toLocaleString()}</span>/mes
-                  </p>
+                  <div className="credit-check-container">
+                    {creditPhase === 'idle' && (
+                      <button
+                        onClick={handleCreditApproval}
+                        className="group relative w-full rounded-2xl border-2 border-dashed border-[#F2A900]/50 hover:border-[#F2A900] bg-[#FFFBF0] hover:bg-[#FFF8E1] transition-all duration-300 cursor-pointer overflow-hidden"
+                      >
+                        <div className="px-4 py-4 flex items-center gap-4">
+                          <div className="shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-[#F2A900] to-[#E09800] flex items-center justify-center shadow-md shadow-[#F2A900]/20 group-hover:shadow-lg group-hover:shadow-[#F2A900]/30 transition-shadow">
+                            <CreditCard className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1 text-left">
+                            <p className="text-[13px] font-bold text-[#002855] leading-tight">
+                              Plan de cuotas disponible
+                            </p>
+                            <p className="text-xs text-[#002855]/50 mt-0.5">
+                              Toque para verificar si califica — <span className="font-semibold text-[#F2A900]">10 pagos de ${Math.round(contractTemplate.variants[0].totalPrice / 10).toLocaleString()}/mes</span>
+                            </p>
+                          </div>
+                          <div className="shrink-0 w-8 h-8 rounded-full bg-[#002855] flex items-center justify-center group-hover:bg-[#003570] transition-colors">
+                            <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-0.5 transition-transform" />
+                          </div>
+                        </div>
+                      </button>
+                    )}
+                    {creditPhase === 'checking' && (
+                      <div className="w-full rounded-2xl border-2 border-[#002855]/20 bg-[#F8FBFF] px-4 py-4 animate-in fade-in duration-200">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Loader2 className="w-5 h-5 text-[#002855] animate-spin shrink-0" />
+                          <p className="text-sm font-semibold text-[#002855]">Verificando elegibilidad...</p>
+                        </div>
+                        <div className="h-2 rounded-full bg-[#002855]/10 overflow-hidden">
+                          <div className="h-full rounded-full bg-gradient-to-r from-[#002855] to-[#F2A900]" style={{ animation: 'credit-progress 1.6s ease-in-out forwards' }} />
+                        </div>
+                      </div>
+                    )}
+                    {creditPhase === 'approved' && (
+                      <div className="w-full rounded-2xl border-2 border-emerald-400/60 bg-gradient-to-r from-emerald-50 to-green-50 px-4 py-4 animate-in zoom-in-95 fade-in duration-500">
+                        <div className="flex items-center gap-3">
+                          <div className="shrink-0 w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center credit-check-pop">
+                            <CheckCircle className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-sm font-bold text-emerald-700">Aprobado</p>
+                              <PartyPopper className="w-4 h-4 text-[#F2A900] credit-party-icon" />
+                            </div>
+                            <p className="text-xs text-emerald-600/80 mt-0.5 font-medium">
+                              10 cuotas de <span className="font-bold">${Math.round(contractTemplate.variants[0].totalPrice / 10).toLocaleString()}/mes</span> — sin intereses
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                  <p className="text-sm text-[#002855]/60">Pago unico</p>
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-[#F2A900]" />
+                    <p className="text-sm text-[#002855]/60">Pago unico</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -547,59 +813,88 @@ export function ServiceDetail({ service, userId }: ServiceDetailProps) {
                     <div className="w-full border-t border-gray-200" />
                   </div>
                   <div className="relative flex justify-center">
-                    <span className="bg-white px-4 text-xs font-semibold text-[#002855]/50 uppercase tracking-wider">
-                      Datos del Menor Beneficiario
+                    <span className="bg-white px-4 text-xs font-semibold text-[#002855]/50 uppercase tracking-wider flex items-center gap-2">
+                      Menores Beneficiarios
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#002855] text-white text-[10px] font-bold">
+                        {minors.length}
+                      </span>
                     </span>
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="minorFullName" className="text-sm font-medium text-[#002855]">
-                    Nombre completo del menor <span className="text-[#F2A900]">*</span>
-                  </Label>
-                  <Input
-                    id="minorFullName"
-                    placeholder="Nombre y apellidos del menor"
-                    value={contractForm.minorFullName}
-                    onChange={(e) => setContractForm({ ...contractForm, minorFullName: e.target.value })}
-                    className="h-11 rounded-xl border-gray-200 focus:border-[#002855] focus:ring-[#002855]/20"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="minorDOB" className="text-sm font-medium text-[#002855]">
-                    Fecha de nacimiento del menor <span className="text-[#F2A900]">*</span>
-                  </Label>
-                  <Input
-                    id="minorDOB"
-                    type="date"
-                    value={contractForm.minorDOB}
-                    onChange={(e) => setContractForm({ ...contractForm, minorDOB: e.target.value })}
-                    className="h-11 rounded-xl border-gray-200 focus:border-[#002855] focus:ring-[#002855]/20"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="minorBirthplace" className="text-sm font-medium text-[#002855]">
-                    Lugar de nacimiento del menor
-                  </Label>
-                  <Input
-                    id="minorBirthplace"
-                    placeholder="Ciudad, Pais"
-                    value={contractForm.minorBirthplace}
-                    onChange={(e) => setContractForm({ ...contractForm, minorBirthplace: e.target.value })}
-                    className="h-11 rounded-xl border-gray-200 focus:border-[#002855] focus:ring-[#002855]/20"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="minorPassport" className="text-sm font-medium text-[#002855]">
-                    Pasaporte del menor
-                  </Label>
-                  <Input
-                    id="minorPassport"
-                    placeholder="Numero de pasaporte del menor"
-                    value={contractForm.minorPassport}
-                    onChange={(e) => setContractForm({ ...contractForm, minorPassport: e.target.value })}
-                    className="h-11 rounded-xl border-gray-200 focus:border-[#002855] focus:ring-[#002855]/20"
-                  />
-                </div>
+
+                {minors.map((minor, index) => (
+                  <div key={index} className="relative rounded-xl border border-gray-200 bg-gray-50/50 p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-[#002855]">Hijo/a #{index + 1}</p>
+                      {minors.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeMinor(index)}
+                          className="flex items-center justify-center w-7 h-7 rounded-lg border border-red-200 bg-white text-red-400 hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`minorFullName-${index}`} className="text-sm font-medium text-[#002855]">
+                        Nombre completo del menor <span className="text-[#F2A900]">*</span>
+                      </Label>
+                      <Input
+                        id={`minorFullName-${index}`}
+                        placeholder="Nombre y apellidos del menor"
+                        value={minor.fullName}
+                        onChange={(e) => updateMinor(index, 'fullName', e.target.value)}
+                        className="h-11 rounded-xl border-gray-200 focus:border-[#002855] focus:ring-[#002855]/20 bg-white"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`minorDOB-${index}`} className="text-sm font-medium text-[#002855]">
+                        Fecha de nacimiento del menor <span className="text-[#F2A900]">*</span>
+                      </Label>
+                      <Input
+                        id={`minorDOB-${index}`}
+                        type="date"
+                        value={minor.dob}
+                        onChange={(e) => updateMinor(index, 'dob', e.target.value)}
+                        className="h-11 rounded-xl border-gray-200 focus:border-[#002855] focus:ring-[#002855]/20 bg-white"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`minorBirthplace-${index}`} className="text-sm font-medium text-[#002855]">
+                        Lugar de nacimiento del menor
+                      </Label>
+                      <Input
+                        id={`minorBirthplace-${index}`}
+                        placeholder="Ciudad, Pais"
+                        value={minor.birthplace}
+                        onChange={(e) => updateMinor(index, 'birthplace', e.target.value)}
+                        className="h-11 rounded-xl border-gray-200 focus:border-[#002855] focus:ring-[#002855]/20 bg-white"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`minorPassport-${index}`} className="text-sm font-medium text-[#002855]">
+                        Pasaporte del menor
+                      </Label>
+                      <Input
+                        id={`minorPassport-${index}`}
+                        placeholder="Numero de pasaporte del menor"
+                        value={minor.passport}
+                        onChange={(e) => updateMinor(index, 'passport', e.target.value)}
+                        className="h-11 rounded-xl border-gray-200 focus:border-[#002855] focus:ring-[#002855]/20 bg-white"
+                      />
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={addMinor}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#F2A900]/40 hover:border-[#F2A900] bg-[#FFFBF0] hover:bg-[#FFF8E1] px-4 py-3 text-sm font-medium text-[#002855]/70 hover:text-[#002855] transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                  Agregar otro hijo/a
+                </button>
               </>
             )}
 
@@ -678,7 +973,7 @@ export function ServiceDetail({ service, userId }: ServiceDetailProps) {
                 </div>
                 <div className="rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 p-3">
                   <p className="text-emerald-200/60 text-xs">Cliente</p>
-                  <p className="text-white font-medium text-sm mt-0.5 truncate">{contractForm.clientFullName}</p>
+                  <p className="text-white font-medium text-sm mt-0.5 truncate">{contractForm.clientFullName || userName || 'Cliente'}</p>
                 </div>
                 {contractTemplate && (() => {
                   const variant = contractTemplate.variants[selectedVariantIndex]
@@ -703,45 +998,192 @@ export function ServiceDetail({ service, userId }: ServiceDetailProps) {
             </div>
           </div>
 
-          {/* Action buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button
-              onClick={handleDownloadPDF}
-              className="group flex items-center justify-center gap-2.5 rounded-xl border-2 border-[#002855]/15 bg-white px-5 py-4 text-[#002855] font-medium transition-all hover:border-[#002855]/30 hover:bg-[#002855]/[0.02] hover:-translate-y-0.5 hover:shadow-lg"
-            >
-              <Download className="w-5 h-5 text-[#002855]/60 group-hover:text-[#002855]" />
-              Descargar PDF
-            </button>
-            <a
-              href={getWhatsAppURL()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex items-center justify-center gap-2.5 rounded-xl bg-[#25D366] px-5 py-4 text-white font-medium transition-all hover:bg-[#20BD5A] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#25D366]/30"
-            >
-              <MessageCircle className="w-5 h-5" />
-              Contactar a Henry
-            </a>
+          {/* Download PDF */}
+          <button
+            onClick={handleDownloadPDF}
+            className="group w-full flex items-center justify-center gap-2.5 rounded-xl border-2 border-[#002855]/15 bg-white px-5 py-4 text-[#002855] font-medium transition-all hover:border-[#002855]/30 hover:bg-[#002855]/[0.02] hover:-translate-y-0.5 hover:shadow-lg"
+          >
+            <Download className="w-5 h-5 text-[#002855]/60 group-hover:text-[#002855]" />
+            Descargar Contrato PDF
+          </button>
+
+          {/* ═══ PAYMENT SECTION ═══ */}
+          <div className="relative rounded-2xl overflow-hidden shadow-xl shadow-[#002855]/8">
+            {/* Navy header band */}
+            <div className="bg-gradient-to-r from-[#002855] via-[#002855] to-[#003570] px-5 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-[#F2A900]/20 flex items-center justify-center">
+                    <CreditCard className="w-4 h-4 text-[#F2A900]" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-bold text-[15px]">Comience su proceso hoy</h3>
+                    <p className="text-white/50 text-[11px]">Pago seguro y protegido</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10">
+                  <Shield className="w-3 h-3 text-[#F2A900]" />
+                  <span className="text-[10px] text-white/70 font-medium">SSL seguro</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Price highlight strip */}
+            {contractTemplate && (() => {
+              const variant = contractTemplate.variants[selectedVariantIndex]
+              const cuota = Math.round(variant.totalPrice / 10)
+              return (
+                <div className="bg-gradient-to-r from-[#FFF8E1] via-[#FFFBF0] to-[#FFF8E1] px-5 py-3 border-b border-[#F2A900]/15">
+                  {contractTemplate.installments ? (
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-[#002855]/70">
+                        Empiece con solo
+                      </p>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-2xl font-extrabold text-[#002855]">${cuota.toLocaleString()}</span>
+                        <span className="text-xs text-[#002855]/50 font-medium">hoy</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-[#002855]/70">Pago unico</p>
+                      <span className="text-2xl font-extrabold text-[#002855]">${variant.totalPrice.toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+
+            {/* Payment buttons */}
+            <div className="bg-white p-4 space-y-3">
+              {/* Stripe — primary CTA */}
+              <button
+                onClick={() => handleStripePayment()}
+                disabled={paymentLoading}
+                className="group relative w-full flex items-center gap-4 rounded-xl bg-gradient-to-r from-[#002855] to-[#003570] px-5 py-4 text-white transition-all hover:shadow-lg hover:shadow-[#002855]/25 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:pointer-events-none overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.07] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                <div className="relative shrink-0 w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                  {paymentLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <CreditCard className="w-5 h-5 text-[#F2A900]" />
+                  )}
+                </div>
+                <div className="relative flex-1 text-left">
+                  <span className="text-sm font-bold block">
+                    {paymentLoading ? 'Procesando pago...' : 'Pagar con Tarjeta'}
+                  </span>
+                  {!paymentLoading && (
+                    <span className="text-xs text-white/50">Visa, Mastercard, American Express</span>
+                  )}
+                </div>
+                {!paymentLoading && (
+                  <div className="relative shrink-0 flex items-center gap-1.5">
+                    {contractTemplate && (
+                      <span className="text-lg font-extrabold text-[#F2A900]">
+                        ${contractTemplate.installments
+                          ? Math.round(contractTemplate.variants[selectedVariantIndex].totalPrice / 10).toLocaleString()
+                          : contractTemplate.variants[selectedVariantIndex].totalPrice.toLocaleString()
+                        }
+                      </span>
+                    )}
+                    <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                  </div>
+                )}
+              </button>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3 px-2">
+                <div className="flex-1 h-px bg-gray-200" />
+                <span className="text-[11px] text-gray-400 font-medium">o si prefiere</span>
+                <div className="flex-1 h-px bg-gray-200" />
+              </div>
+
+              {/* WhatsApp — secondary warm option */}
+              <button
+                onClick={handleWhatsAppPayment}
+                disabled={paymentLoading}
+                className="group w-full flex items-center gap-4 rounded-xl border-2 border-[#25D366]/30 bg-[#25D366]/[0.04] px-5 py-3.5 transition-all hover:border-[#25D366]/60 hover:bg-[#25D366]/[0.08] hover:-translate-y-0.5 hover:shadow-md disabled:opacity-60 disabled:pointer-events-none"
+              >
+                <div className="shrink-0 w-10 h-10 rounded-xl bg-[#25D366] flex items-center justify-center shadow-sm shadow-[#25D366]/20 group-hover:shadow-md group-hover:shadow-[#25D366]/30 transition-shadow">
+                  <MessageCircle className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1 text-left">
+                  <span className="text-sm font-bold text-[#002855] block">Coordinar pago con Henry</span>
+                  <span className="text-xs text-[#002855]/45">WhatsApp, Zelle o Efectivo</span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-[#25D366]/40 group-hover:text-[#25D366] group-hover:translate-x-0.5 transition-all shrink-0" />
+              </button>
+            </div>
           </div>
 
-          {/* Start case - hero CTA */}
-          <button
-            onClick={handleStartCase}
-            disabled={creating}
-            className="group relative w-full rounded-2xl bg-gradient-to-r from-[#002855] to-[#003570] p-5 text-white shadow-xl shadow-[#002855]/20 transition-all hover:shadow-2xl hover:shadow-[#002855]/30 hover:-translate-y-0.5 disabled:opacity-60 disabled:pointer-events-none overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-[#F2A900]/0 via-[#F2A900]/10 to-[#F2A900]/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-            <div className="relative flex items-center justify-center gap-3">
-              {creating ? (
-                <span className="text-base font-medium">Creando caso...</span>
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5 text-[#F2A900]" />
-                  <span className="text-base font-semibold">Comenzar mi Caso</span>
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
+          {/* ═══ START CASE — LOCKED / UNLOCKED ═══ */}
+          {existingCase?.access_granted ? (
+            <button
+              onClick={() => router.push(`/portal/cases/${existingCase.id}/wizard`)}
+              className="group relative w-full rounded-2xl bg-gradient-to-r from-[#002855] to-[#003570] p-5 text-white shadow-xl shadow-[#002855]/20 transition-all hover:shadow-2xl hover:shadow-[#002855]/30 hover:-translate-y-0.5 overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-[#F2A900]/0 via-[#F2A900]/10 to-[#F2A900]/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+              <div className="relative flex items-center justify-center gap-3">
+                <Sparkles className="w-5 h-5 text-[#F2A900]" />
+                <span className="text-base font-semibold">Comenzar mi Caso</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </button>
+          ) : (
+            <div className="relative w-full rounded-2xl border-2 border-[#002855]/10 bg-gradient-to-b from-[#F8FBFF] to-[#EEF2F7] p-5 overflow-hidden">
+              {/* Blurred teaser background */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-[0.04]">
+                <FileText className="w-32 h-32 text-[#002855]" />
+              </div>
+              <div className="relative text-center space-y-3">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[#002855]/[0.07] mx-auto">
+                  <Lock className="w-5 h-5 text-[#002855]/40" />
+                </div>
+                <div>
+                  <p className="text-[15px] font-bold text-[#002855]">Su caso esta listo para comenzar</p>
+                  <p className="text-sm text-[#002855]/50 mt-1 leading-relaxed max-w-xs mx-auto">
+                    Al completar su pago, Henry preparara sus formularios y podra comenzar inmediatamente.
+                  </p>
+                </div>
+                <div className="flex items-center justify-center gap-4 pt-1 text-[#002855]/30">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    <span className="text-[11px] font-medium">Formularios</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    <span className="text-[11px] font-medium">Documentos</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    <span className="text-[11px] font-medium">Seguimiento</span>
+                  </div>
+                </div>
+              </div>
             </div>
-          </button>
+          )}
+        </div>
+      )}
+      {/* ═══ CONFETTI CELEBRATION ═══ */}
+      {showConfetti && (
+        <div className="fixed inset-0 z-50 pointer-events-none overflow-hidden">
+          {Array.from({ length: 50 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute"
+              style={{
+                left: `${8 + Math.random() * 84}%`,
+                top: '-12px',
+                width: `${6 + Math.random() * 6}px`,
+                height: `${6 + Math.random() * 6}px`,
+                borderRadius: i % 3 === 0 ? '50%' : i % 3 === 1 ? '2px' : '0',
+                backgroundColor: ['#F2A900', '#002855', '#10B981', '#BE1E2D', '#8B5CF6', '#F59E0B', '#06B6D4'][i % 7],
+                animation: `confetti-fall ${2 + Math.random() * 1.5}s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${Math.random() * 0.6}s forwards`,
+              }}
+            />
+          ))}
         </div>
       )}
     </div>

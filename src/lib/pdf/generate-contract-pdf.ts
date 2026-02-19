@@ -1,6 +1,13 @@
 import jsPDF from 'jspdf'
 import { dancingScriptBase64 } from './dancing-script-base64'
 
+interface MinorData {
+  fullName: string
+  dob?: string
+  birthplace?: string
+  passport?: string
+}
+
 interface ContractPDFInput {
   serviceName: string
   totalPrice: number
@@ -9,10 +16,7 @@ interface ContractPDFInput {
   clientPassport: string
   clientDOB: string
   clientSignature: string
-  minorFullName?: string
-  minorDOB?: string
-  minorBirthplace?: string
-  minorPassport?: string
+  minors?: MinorData[]
   objetoDelContrato: string
   etapas: string[]
 }
@@ -47,8 +51,7 @@ export function generateContractPDF(input: ContractPDFInput): jsPDF {
   const {
     serviceName, totalPrice, installments,
     clientFullName, clientPassport, clientDOB, clientSignature,
-    minorFullName, minorDOB, minorBirthplace, minorPassport,
-    objetoDelContrato, etapas,
+    minors, objetoDelContrato, etapas,
   } = input
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' })
@@ -167,15 +170,26 @@ export function generateContractPDF(input: ContractPDFInput): jsPDF {
   fieldLine('Fecha de nacimiento:', formatDateSpanish(clientDOB))
   y += 4
 
-  // Minor (if applicable)
-  if (minorFullName) {
-    doc.text('MENOR BENEFICIARIA:', margin + 2, y)
+  // Minors (if applicable)
+  if (minors && minors.length > 0) {
+    const title = minors.length === 1 ? 'MENOR BENEFICIARIO/A:' : 'MENORES BENEFICIARIOS/AS:'
+    doc.text(title, margin + 2, y)
     y += 6
-    fieldLine('Nombre completo:', minorFullName)
-    if (minorDOB) fieldLine('Fecha de nacimiento:', formatDateSpanish(minorDOB))
-    if (minorBirthplace) fieldLine('Lugar de nacimiento:', minorBirthplace)
-    if (minorPassport) fieldLine('Pasaporte:', minorPassport)
-    y += 4
+
+    minors.forEach((minor, i) => {
+      if (minors.length > 1) {
+        checkPageBreak(30)
+        bodyStyle()
+        doc.text(`Hijo/a #${i + 1}:`, margin + 4, y)
+        y += 6
+      }
+      fieldLine('Nombre completo:', minor.fullName)
+      if (minor.dob) fieldLine('Fecha de nacimiento:', formatDateSpanish(minor.dob))
+      if (minor.birthplace) fieldLine('Lugar de nacimiento:', minor.birthplace)
+      if (minor.passport) fieldLine('Pasaporte:', minor.passport)
+      y += 3
+    })
+    y += 2
   }
 
   // === OBJETO DEL CONTRATO ===

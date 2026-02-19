@@ -518,6 +518,69 @@ const serviceInfoMap: Record<string, ServiceInfo> = {
       'La fecha límite regular es el 15 de abril de cada año.',
     ],
   },
+
+  'cambio-de-estatus': {
+    slug: 'cambio-de-estatus',
+    totalTimeline: '2 a 6 meses (depende del volumen de USCIS)',
+    stages: [
+      {
+        step: 1,
+        title: 'Evaluación de elegibilidad',
+        description: 'Revisión del estatus migratorio actual (B-1/B-2), verificación de que no ha violado condiciones de su visa, y determinación de elegibilidad para el cambio a F-1.',
+        timeline: '1-2 semanas',
+      },
+      {
+        step: 2,
+        title: 'Admisión escolar y obtención del I-20',
+        description: 'Asistencia en la solicitud de admisión a una escuela certificada por SEVP. Una vez aceptado, la escuela emite el Formulario I-20 (Certificate of Eligibility) indicando "cambio de estatus" como razón.',
+        timeline: '2-6 semanas',
+      },
+      {
+        step: 3,
+        title: 'Pago de tarifa SEVIS I-901',
+        description: 'Pago de la tarifa SEVIS al Departamento de Seguridad Nacional (DHS) a través del sistema de pagos en línea.',
+        timeline: '1-2 días',
+        filingFee: '$350',
+        filingFeeNote: 'Tarifa SEVIS I-901 pagada directamente a DHS (fis.gov). Requerida para activar su registro en el sistema SEVIS.',
+        formNumber: 'I-901',
+      },
+      {
+        step: 4,
+        title: 'Preparación y presentación del Formulario I-539',
+        description: 'Completar la solicitud de cambio de estatus no-inmigrante (I-539) con todos los documentos de soporte: I-20, evidencia financiera, carta de admisión, y comprobante de pago SEVIS.',
+        timeline: '1-2 semanas',
+        filingFee: '$420',
+        filingFeeNote: 'Filing fee de USCIS para el Formulario I-539 (presentación en línea). Pagado directamente a USCIS.',
+        formNumber: 'I-539',
+      },
+      {
+        step: 5,
+        title: 'Datos biométricos',
+        description: 'Asistir a la cita de biométricos en un Centro de Servicios de Aplicación (ASC) de USCIS para huellas dactilares y fotografía.',
+        timeline: '2-4 semanas después de la solicitud',
+      },
+      {
+        step: 6,
+        title: 'Período de espera y seguimiento',
+        description: 'USCIS procesa la solicitud. No puede comenzar clases hasta que USCIS apruebe el cambio de estatus. Si faltan 15 días para el inicio del programa y no hay aprobación, se puede solicitar diferimiento al siguiente semestre.',
+        timeline: '2-5 meses (mediana actual: 2.6 meses)',
+      },
+      {
+        step: 7,
+        title: 'Aprobación y activación del estatus F-1',
+        description: 'Al recibir la aprobación, su estatus cambia oficialmente a F-1. Puede inscribirse y comenzar clases. Debe reportarse con el DSO de su escuela para activar su registro SEVIS.',
+        timeline: '1-2 semanas post-aprobación',
+      },
+    ],
+    importantNotes: [
+      'Aranceles gubernamentales estimados: Formulario I-539 ($420 en línea) + Tarifa SEVIS I-901 ($350) + Admisión escolar (~$100 promedio) = Total mínimo aprox. $870 USD. Estos son pagos que el cliente realiza directamente al gobierno.',
+      'IMPORTANTE: No puede inscribirse ni asistir a clases mientras tiene estatus B-1/B-2, ni mientras la solicitud I-539 está pendiente. Hacerlo viola su estatus y lo descalifica.',
+      'La escuela debe estar certificada por SEVP (Student and Exchange Visitor Program). Puede verificar escuelas certificadas en studyinthestates.dhs.gov.',
+      'Se recomienda presentar la solicitud al menos 45 días antes de que expire su estatus actual, pero no más de 6 meses antes.',
+      'Si USCIS no aprueba a tiempo, contacte al DSO de su escuela para diferir al siguiente semestre. No comience clases sin aprobación.',
+      'Procesamiento premium disponible por $1,965 adicionales para decisión en 30 días (pagado directamente a USCIS).',
+    ],
+  },
 }
 
 export function getServiceInfo(slug: string): ServiceInfo | null {

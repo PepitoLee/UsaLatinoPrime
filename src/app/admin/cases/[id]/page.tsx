@@ -25,11 +25,18 @@ export default async function AdminCaseDetailPage({
     .eq('case_id', id)
     .order('created_at', { ascending: false })
 
+  const { data: payments } = await supabase
+    .from('payments')
+    .select('*')
+    .eq('case_id', id)
+    .order('installment_number', { ascending: true })
+
   return (
     <AdminCaseView
       caseData={caseData}
       documents={documents || []}
       activities={activities || []}
+      payments={payments || []}
     />
   )
 }

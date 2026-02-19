@@ -5,11 +5,11 @@ import { CardSpotlight } from '@/components/portal/CardSpotlight'
 import {
   Shield, Gavel, Baby, ArrowRightLeft, Receipt, Hash, CreditCard, FileText, Car,
   Star, Clock, CheckCircle2, Users, ChevronRight, MapPin, CalendarDays, Navigation,
-  Globe, Sparkles, Phone, Zap, Award, TrendingUp
+  Globe, Sparkles, Phone, Zap, Award, TrendingUp, GraduationCap
 } from 'lucide-react'
 
 const iconMap: Record<string, any> = {
-  Shield, Gavel, Baby, ArrowRightLeft, Receipt, Hash, CreditCard, FileText, Car
+  Shield, Gavel, Baby, ArrowRightLeft, Receipt, Hash, CreditCard, FileText, Car, GraduationCap
 }
 
 const featuredSlugs = ['cambio-de-corte', 'visa-juvenil']
@@ -28,13 +28,14 @@ export default async function ServicesPage() {
 
   const { data: { user } } = await supabase.auth.getUser()
   const firstName = user?.user_metadata?.first_name || ''
+  const userId = user?.id || ''
 
   const featured = services?.filter(s => featuredSlugs.includes(s.slug)) || []
   const regular = services?.filter(s => !featuredSlugs.includes(s.slug)) || []
 
   return (
     <div className="space-y-10">
-      <WelcomeModal firstName={firstName} />
+      <WelcomeModal firstName={firstName} userId={userId} />
 
       {/* ══════════ HERO HEADER — Warm cream/gold editorial ══════════ */}
       <div className="relative overflow-hidden rounded-2xl p-8 md:p-10 bg-gradient-to-br from-[#FFF8EC] via-[#FFF3DC] to-[#FDEBD0]">

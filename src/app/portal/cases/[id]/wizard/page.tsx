@@ -22,6 +22,10 @@ export default async function WizardPage({
 
   if (!caseData) notFound()
 
+  if (!caseData.access_granted) {
+    redirect(`/portal/payments`)
+  }
+
   if (caseData.intake_status !== 'in_progress' && caseData.intake_status !== 'needs_correction') {
     redirect(`/portal/cases/${id}`)
   }
