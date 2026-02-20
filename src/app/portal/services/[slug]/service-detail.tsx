@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,7 @@ import { toast } from 'sonner'
 import { getWorkflow } from '@/lib/workflows'
 import { getContractTemplate } from '@/lib/contracts'
 import { getServiceInfo } from '@/lib/service-info'
+import { getPromoConfig } from '@/lib/promo-config'
 import { ServiceInfoBanner } from '@/components/portal/ServiceInfoBanner'
 import type { ServiceCatalog } from '@/types/database'
 
@@ -50,6 +51,33 @@ export function ServiceDetail({ service, userId, existingCase, userName }: Servi
   const [paymentLoading, setPaymentLoading] = useState(false)
   const [creditPhase, setCreditPhase] = useState<'idle' | 'checking' | 'approved'>('idle')
   const [showConfetti, setShowConfetti] = useState(false)
+  const [isPromoUser, setIsPromoUser] = useState(false)
+
+  // Detectar usuario que viene de flujo promocional (TikTok)
+  useEffect(() => {
+    try {
+      // Usar flag en window para sobrevivir re-mounts de hidratación
+      if ((window as any).__ulp_promo_applied) {
+        setIsPromoUser(true)
+        setFlowStep('contract_form')
+        return
+      }
+      const raw = localStorage.getItem('ulp_promo_redirect')
+      if (!raw) return
+      const data = JSON.parse(raw)
+      const TTL_MS = 30 * 60 * 1000 // 30 minutos
+      if (data.slug === service.slug && Date.now() - data.ts < TTL_MS) {
+        localStorage.removeItem('ulp_promo_redirect')
+        ;(window as any).__ulp_promo_applied = true
+        setIsPromoUser(true)
+        setFlowStep('contract_form')
+      } else {
+        localStorage.removeItem('ulp_promo_redirect')
+      }
+    } catch {
+      localStorage.removeItem('ulp_promo_redirect')
+    }
+  }, [service.slug])
 
   function addMinor() {
     setMinors([...minors, { fullName: '', dob: '', birthplace: '', passport: '' }])
@@ -412,6 +440,22 @@ export function ServiceDetail({ service, userId, existingCase, userName }: Servi
           henryFee={contractTemplate.variants[selectedVariantIndex].totalPrice}
           installments={contractTemplate.installments}
         />
+      )}
+
+      {/* ═══ PROMO BANNER ═══ */}
+      {isPromoUser && (
+        <div className="relative rounded-2xl border-2 border-[#F2A900]/40 bg-gradient-to-r from-[#FFFBF0] via-[#FFF8E1] to-[#FFFBF0] p-5 shadow-md shadow-[#F2A900]/10 overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#F2A900] via-[#D4940A] to-[#F2A900]" />
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#F2A900]/20 flex-shrink-0">
+              <Sparkles className="w-5 h-5 text-[#F2A900]" />
+            </div>
+            <div>
+              <h3 className="text-[15px] font-bold text-[#002855]">¡Ya casi esta lista!</h3>
+              <p className="text-sm text-[#002855]/60">Complete el contrato para iniciar el proceso de Visa Juvenil.</p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ═══ PRICING CARD ═══ */}
