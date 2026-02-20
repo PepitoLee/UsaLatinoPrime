@@ -9,7 +9,7 @@ import { WizardProgress } from './WizardProgress'
 import { WizardStep } from './WizardStep'
 import { DocumentUploader } from './DocumentUploader'
 import { ReviewAndSign } from './ReviewAndSign'
-import { useAutoSave } from '@/hooks/useAutoSave'
+import { useAutoSave, getLocalDraft, clearLocalDraft } from '@/hooks/useAutoSave'
 import { validateStep } from '@/lib/wizard/validation'
 import type { ServiceWorkflow } from '@/types/wizard'
 import type { Case, Document } from '@/types/database'
@@ -26,9 +26,23 @@ interface WizardContainerProps {
 export function WizardContainer({ caseData, workflow, initialDocuments }: WizardContainerProps) {
   const router = useRouter()
   const supabase = createClient()
-  const [currentStep, setCurrentStep] = useState(caseData.current_step || 0)
+
+  // Restore from localStorage if it has newer data than the DB
+  const [restoredFromDraft] = useState(() => {
+    const draft = getLocalDraft(caseData.id)
+    if (!draft) return null
+    // If draft has data and DB form_data is empty or older, use draft
+    const dbKeys = Object.keys((caseData.form_data as Record<string, unknown>) || {})
+    const draftKeys = Object.keys(draft.formData || {})
+    if (draftKeys.length > dbKeys.length) return draft
+    return null
+  })
+
+  const [currentStep, setCurrentStep] = useState(
+    restoredFromDraft?.currentStep ?? caseData.current_step ?? 0
+  )
   const [formData, setFormData] = useState<Record<string, unknown>>(
-    (caseData.form_data as Record<string, unknown>) || {}
+    restoredFromDraft?.formData ?? (caseData.form_data as Record<string, unknown>) ?? {}
   )
   const [errors, setErrors] = useState<ValidationError[]>([])
   const [completedSteps, setCompletedSteps] = useState<number[]>([])
@@ -42,7 +56,16 @@ export function WizardContainer({ caseData, workflow, initialDocuments }: Wizard
   const isDocStep = !currentStepData?.fields || currentStepData.title.toLowerCase().includes('documento')
   const isReviewStep = currentStepData?.title.toLowerCase().includes('revisión') || currentStepData?.title.toLowerCase().includes('firma')
 
-  useAutoSave(caseData.id, formData, currentStep, caseData.intake_status === 'in_progress')
+  useAutoSave(caseData.id, formData, currentStep, caseData.intake_status === 'in_progress' || caseData.intake_status === 'needs_correction')
+
+  // Notify user if data was restored from local draft
+  useEffect(() => {
+    if (restoredFromDraft) {
+      toast.info('Se restauró su progreso guardado', {
+        description: 'Puede continuar donde lo dejó.',
+      })
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Calculate completed steps on mount
   useEffect(() => {
@@ -118,6 +141,7 @@ export function WizardContainer({ caseData, workflow, initialDocuments }: Wizard
         description: 'El cliente completó y envió el formulario',
       })
 
+      clearLocalDraft(caseData.id)
       toast.success('Caso enviado exitosamente', {
         description: 'Henry revisará su caso lo antes posible.',
       })

@@ -106,6 +106,7 @@ export interface Case {
   client_notes?: string
   henry_notes?: string
   correction_notes?: string
+  access_granted: boolean
   created_at: string
   updated_at: string
   // Joined fields
