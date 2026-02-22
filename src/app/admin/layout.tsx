@@ -77,7 +77,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col border-r bg-white">
         <NavContent />
       </aside>
-      <div className="sticky top-0 z-40 flex items-center gap-4 bg-white border-b px-4 py-3 md:hidden">
+      <div className="sticky top-0 z-40 flex items-center gap-4 bg-white border-b px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:hidden">
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon"><Menu className="w-5 h-5" /></Button>
@@ -86,7 +86,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </Sheet>
         <h1 className="font-semibold">UsaLatinoPrime Admin</h1>
       </div>
-      <main className="md:ml-64 p-6">{children}</main>
+      <main className="md:ml-64 p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">{children}</main>
     </div>
   )
 }

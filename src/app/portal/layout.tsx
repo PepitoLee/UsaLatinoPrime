@@ -118,7 +118,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       </aside>
 
       {/* Mobile header */}
-      <div className="sticky top-0 z-40 flex items-center gap-4 bg-white border-b px-4 py-3 md:hidden">
+      <div className="sticky top-0 z-40 flex items-center gap-4 bg-white border-b px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:hidden">
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -135,7 +135,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       </div>
 
       {/* Main content */}
-      <main className="md:ml-64 p-6">
+      <main className="md:ml-64 p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         {children}
       </main>
 
