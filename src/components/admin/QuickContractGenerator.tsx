@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { getInstallmentCount } from '@/lib/contracts'
 import {
   FileText, PenLine, Download, Plus, X, ChevronDown,
   User, Stamp, Calendar, Baby,
@@ -116,6 +117,7 @@ export function QuickContractGenerator() {
         serviceName: serviceLabel,
         totalPrice: variant.totalPrice,
         installments: template.installments,
+        installmentCount: getInstallmentCount(variant),
         clientFullName: contractForm.clientFullName.trim(),
         clientPassport: contractForm.clientPassport.trim(),
         clientDOB: contractForm.clientDOB,
@@ -224,7 +226,7 @@ export function QuickContractGenerator() {
             <span className="text-sm text-[#002855]/70">Precio:</span>
             <span className="text-sm font-bold text-[#002855]">${template.variants[0].totalPrice.toLocaleString()} USD</span>
             {template.installments && (
-              <span className="text-xs text-gray-500 ml-1">(10 cuotas de ${Math.round(template.variants[0].totalPrice / 10).toLocaleString()})</span>
+              <span className="text-xs text-gray-500 ml-1">({getInstallmentCount(template.variants[0])} cuotas de ${Math.round(template.variants[0].totalPrice / getInstallmentCount(template.variants[0])).toLocaleString()})</span>
             )}
           </div>
         )}

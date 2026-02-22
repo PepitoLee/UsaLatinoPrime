@@ -12,6 +12,7 @@ interface ServiceInfoBannerProps {
   serviceName: string
   henryFee: number
   installments: boolean
+  installmentCount?: number
 }
 
 export function ServiceInfoBanner({
@@ -19,6 +20,7 @@ export function ServiceInfoBanner({
   serviceName,
   henryFee,
   installments,
+  installmentCount = 10,
 }: ServiceInfoBannerProps) {
   const [expanded, setExpanded] = useState(true)
   const [autoCollapsed, setAutoCollapsed] = useState(false)
@@ -107,7 +109,7 @@ export function ServiceInfoBanner({
                 </p>
                 {installments && (
                   <p className="text-[10px] text-[#002855]/50 mt-0.5">
-                    10 cuotas de ${Math.round(henryFee / 10).toLocaleString()}/mes
+                    {installmentCount} cuotas de ${Math.round(henryFee / installmentCount).toLocaleString()}/mes
                   </p>
                 )}
               </div>

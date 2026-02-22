@@ -12,6 +12,7 @@ interface ContractPDFInput {
   serviceName: string
   totalPrice: number
   installments: boolean
+  installmentCount?: number
   clientFullName: string
   clientPassport: string
   clientDOB: string
@@ -49,7 +50,7 @@ const WEIGHT = 'normal'
 
 export function generateContractPDF(input: ContractPDFInput): jsPDF {
   const {
-    serviceName, totalPrice, installments,
+    serviceName, totalPrice, installments, installmentCount = 10,
     clientFullName, clientPassport, clientDOB, clientSignature,
     minors, objetoDelContrato, etapas,
   } = input
@@ -215,10 +216,10 @@ export function generateContractPDF(input: ContractPDFInput): jsPDF {
   // === HONORARIOS ===
   sectionTitle('HONORARIOS Y FORMA DE PAGO')
   if (installments) {
-    const monthly = Math.round(totalPrice / 10)
+    const monthly = Math.round(totalPrice / installmentCount)
     paragraph(
       `Los honorarios por los servicios descritos en este contrato ascienden a un total de $${totalPrice.toLocaleString()} USD, ` +
-      `pagaderos en 10 cuotas mensuales de $${monthly.toLocaleString()} USD cada una.`
+      `pagaderos en ${installmentCount} cuotas mensuales de $${monthly.toLocaleString()} USD cada una.`
     )
   } else {
     paragraph(

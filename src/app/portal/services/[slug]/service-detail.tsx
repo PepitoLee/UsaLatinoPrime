@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getWorkflow } from '@/lib/workflows'
-import { getContractTemplate } from '@/lib/contracts'
+import { getContractTemplate, getInstallmentCount } from '@/lib/contracts'
 import { getServiceInfo } from '@/lib/service-info'
 import { getPromoConfig } from '@/lib/promo-config'
 import { ServiceInfoBanner } from '@/components/portal/ServiceInfoBanner'
@@ -166,6 +166,7 @@ export function ServiceDetail({ service, userId, existingCase, userName }: Servi
         serviceName: service.name,
         totalPrice: variant.totalPrice,
         installments: contractTemplate.installments,
+        installmentCount: getInstallmentCount(variant),
         clientFullName: contractForm.clientFullName.trim(),
         clientPassport: contractForm.clientPassport.trim(),
         clientDOB: contractForm.clientDOB,
@@ -263,8 +264,9 @@ export function ServiceDetail({ service, userId, existingCase, userName }: Servi
     const total = variant.totalPrice.toLocaleString()
     let pagoInfo: string
     if (contractTemplate.installments) {
-      const cuota = Math.round(variant.totalPrice / 10).toLocaleString()
-      pagoInfo = `Total $${total} en 10 cuotas de $${cuota}/mes`
+      const nc = getInstallmentCount(variant)
+      const cuota = Math.round(variant.totalPrice / nc).toLocaleString()
+      pagoInfo = `Total $${total} en ${nc} cuotas de $${cuota}/mes`
     } else {
       pagoInfo = `Total $${total} (pago unico)`
     }
@@ -356,7 +358,7 @@ export function ServiceDetail({ service, userId, existingCase, userName }: Servi
           total_price: variant.totalPrice,
           installments: contractTemplate.installments,
           installment_number: 1,
-          total_installments: contractTemplate.installments ? 10 : 1,
+          total_installments: contractTemplate.installments ? getInstallmentCount(variant) : 1,
           service_slug: service.slug,
         }),
       })
@@ -439,6 +441,7 @@ export function ServiceDetail({ service, userId, existingCase, userName }: Servi
           serviceName={service.name}
           henryFee={contractTemplate.variants[selectedVariantIndex].totalPrice}
           installments={contractTemplate.installments}
+          installmentCount={getInstallmentCount(contractTemplate.variants[selectedVariantIndex])}
         />
       )}
 
@@ -513,7 +516,7 @@ export function ServiceDetail({ service, userId, existingCase, userName }: Servi
                             Plan de cuotas disponible
                           </p>
                           <p className="text-xs text-[#002855]/50 mt-0.5">
-                            Toque para verificar si califica — <span className="font-semibold text-[#F2A900]">10 pagos de ${Math.round(contractTemplate.variants[selectedVariantIndex].totalPrice / 10).toLocaleString()}/mes</span>
+                            Toque para verificar si califica — <span className="font-semibold text-[#F2A900]">{getInstallmentCount(contractTemplate.variants[selectedVariantIndex])} pagos de ${Math.round(contractTemplate.variants[selectedVariantIndex].totalPrice / getInstallmentCount(contractTemplate.variants[selectedVariantIndex])).toLocaleString()}/mes</span>
                           </p>
                         </div>
                         <div className="shrink-0 w-8 h-8 rounded-full bg-[#002855] flex items-center justify-center group-hover:bg-[#003570] transition-colors">
@@ -545,7 +548,7 @@ export function ServiceDetail({ service, userId, existingCase, userName }: Servi
                             <PartyPopper className="w-4 h-4 text-[#F2A900] credit-party-icon" />
                           </div>
                           <p className="text-xs text-emerald-600/80 mt-0.5 font-medium">
-                            10 cuotas de <span className="font-bold">${Math.round(contractTemplate.variants[selectedVariantIndex].totalPrice / 10).toLocaleString()}/mes</span> — sin intereses
+                            {getInstallmentCount(contractTemplate.variants[selectedVariantIndex])} cuotas de <span className="font-bold">${Math.round(contractTemplate.variants[selectedVariantIndex].totalPrice / getInstallmentCount(contractTemplate.variants[selectedVariantIndex])).toLocaleString()}/mes</span> — sin intereses
                           </p>
                         </div>
                       </div>
@@ -586,7 +589,7 @@ export function ServiceDetail({ service, userId, existingCase, userName }: Servi
                               Plan de cuotas disponible
                             </p>
                             <p className="text-xs text-[#002855]/50 mt-0.5">
-                              Toque para verificar si califica — <span className="font-semibold text-[#F2A900]">10 pagos de ${Math.round(contractTemplate.variants[0].totalPrice / 10).toLocaleString()}/mes</span>
+                              Toque para verificar si califica — <span className="font-semibold text-[#F2A900]">{getInstallmentCount(contractTemplate.variants[0])} pagos de ${Math.round(contractTemplate.variants[0].totalPrice / getInstallmentCount(contractTemplate.variants[0])).toLocaleString()}/mes</span>
                             </p>
                           </div>
                           <div className="shrink-0 w-8 h-8 rounded-full bg-[#002855] flex items-center justify-center group-hover:bg-[#003570] transition-colors">
@@ -618,7 +621,7 @@ export function ServiceDetail({ service, userId, existingCase, userName }: Servi
                               <PartyPopper className="w-4 h-4 text-[#F2A900] credit-party-icon" />
                             </div>
                             <p className="text-xs text-emerald-600/80 mt-0.5 font-medium">
-                              10 cuotas de <span className="font-bold">${Math.round(contractTemplate.variants[0].totalPrice / 10).toLocaleString()}/mes</span> — sin intereses
+                              {getInstallmentCount(contractTemplate.variants[0])} cuotas de <span className="font-bold">${Math.round(contractTemplate.variants[0].totalPrice / getInstallmentCount(contractTemplate.variants[0])).toLocaleString()}/mes</span> — sin intereses
                             </p>
                           </div>
                         </div>
@@ -1030,7 +1033,7 @@ export function ServiceDetail({ service, userId, existingCase, userName }: Servi
                       <div className="rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 p-3">
                         <p className="text-emerald-200/60 text-xs">Forma de Pago</p>
                         {contractTemplate.installments ? (
-                          <p className="text-white font-medium text-sm mt-0.5">${Math.round(variant.totalPrice / 10).toLocaleString()}/mes x 10</p>
+                          <p className="text-white font-medium text-sm mt-0.5">${Math.round(variant.totalPrice / getInstallmentCount(variant)).toLocaleString()}/mes x {getInstallmentCount(variant)}</p>
                         ) : (
                           <p className="text-white font-medium text-sm mt-0.5">Pago unico</p>
                         )}
@@ -1075,7 +1078,7 @@ export function ServiceDetail({ service, userId, existingCase, userName }: Servi
             {/* Price highlight strip */}
             {contractTemplate && (() => {
               const variant = contractTemplate.variants[selectedVariantIndex]
-              const cuota = Math.round(variant.totalPrice / 10)
+              const cuota = Math.round(variant.totalPrice / getInstallmentCount(variant))
               return (
                 <div className="bg-gradient-to-r from-[#FFF8E1] via-[#FFFBF0] to-[#FFF8E1] px-5 py-3 border-b border-[#F2A900]/15">
                   {contractTemplate.installments ? (
@@ -1127,7 +1130,7 @@ export function ServiceDetail({ service, userId, existingCase, userName }: Servi
                     {contractTemplate && (
                       <span className="text-lg font-extrabold text-[#F2A900]">
                         ${contractTemplate.installments
-                          ? Math.round(contractTemplate.variants[selectedVariantIndex].totalPrice / 10).toLocaleString()
+                          ? Math.round(contractTemplate.variants[selectedVariantIndex].totalPrice / getInstallmentCount(contractTemplate.variants[selectedVariantIndex])).toLocaleString()
                           : contractTemplate.variants[selectedVariantIndex].totalPrice.toLocaleString()
                         }
                       </span>

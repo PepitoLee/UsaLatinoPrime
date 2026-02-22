@@ -1,6 +1,7 @@
 export interface PriceVariant {
   label: string
   totalPrice: number
+  installmentCount?: number
 }
 
 export interface ContractTemplate {
@@ -76,7 +77,7 @@ const contracts: Record<string, ContractTemplate> = {
     requiresMinor: true,
     variants: [
       { label: 'Individual', totalPrice: 2500 },
-      { label: 'Familiar', totalPrice: 3500 },
+      { label: 'Familiar', totalPrice: 3500, installmentCount: 14 },
     ],
     objetoDelContrato:
       'El CONSULTOR se compromete a brindar asesoria y asistencia en el proceso de obtencion del Estatus Especial de Inmigrante Juvenil (SIJS) para el menor beneficiario, incluyendo la coordinacion con la corte estatal y la presentacion ante USCIS.',
@@ -194,4 +195,9 @@ const contracts: Record<string, ContractTemplate> = {
 
 export function getContractTemplate(slug: string): ContractTemplate | null {
   return contracts[slug] || null
+}
+
+/** Número de cuotas para una variante (default 10) */
+export function getInstallmentCount(variant: PriceVariant): number {
+  return variant.installmentCount ?? 10
 }
