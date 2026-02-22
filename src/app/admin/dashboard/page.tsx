@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   FileText, Users, DollarSign, AlertCircle, Clock,
   MessageCircle, CalendarClock, CheckCircle, TrendingUp,
-  AlertTriangle, CreditCard, Shield,
+  AlertTriangle, CreditCard, Shield, Baby,
 } from 'lucide-react'
 import { QuickContractGenerator } from '@/components/admin/QuickContractGenerator'
 import { format, addDays } from 'date-fns'
@@ -123,6 +123,18 @@ export default async function AdminDashboardPage() {
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
     .limit(10)
+
+  // ── Visa Juvenil Submissions ──
+  const { count: visaJuvenilCount } = await supabase
+    .from('visa_juvenil_submissions')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending')
+
+  // ── Asilo I-589 Submissions ──
+  const { count: asiloCount } = await supabase
+    .from('asilo_submissions')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending')
 
   const methodLabels: Record<string, string> = {
     stripe: 'Stripe',
@@ -261,6 +273,46 @@ export default async function AdminDashboardPage() {
                   </div>
                 </div>
                 <Badge className="bg-amber-100 text-amber-800">{credibleFearCount} &rarr;</Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      )}
+
+      {/* ── Visa Juvenil Quick Link ── */}
+      {(visaJuvenilCount ?? 0) > 0 && (
+        <Link href="/admin/visa-juvenil">
+          <Card className="border-blue-200 hover:bg-blue-50/50 transition-colors cursor-pointer">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Baby className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Formularios de Visa Juvenil (SIJS)</p>
+                    <p className="text-xs text-gray-500">{visaJuvenilCount} pendiente{visaJuvenilCount! > 1 ? 's' : ''} de revisi&oacute;n</p>
+                  </div>
+                </div>
+                <Badge className="bg-blue-100 text-blue-800">{visaJuvenilCount} &rarr;</Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      )}
+
+      {/* ── Asilo I-589 Quick Link ── */}
+      {(asiloCount ?? 0) > 0 && (
+        <Link href="/admin/asilo">
+          <Card className="border-indigo-200 hover:bg-indigo-50/50 transition-colors cursor-pointer">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FileText className="w-5 h-5 text-indigo-600" />
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Formularios de Asilo I-589</p>
+                    <p className="text-xs text-gray-500">{asiloCount} pendiente{asiloCount! > 1 ? 's' : ''} de revisi&oacute;n</p>
+                  </div>
+                </div>
+                <Badge className="bg-indigo-100 text-indigo-800">{asiloCount} &rarr;</Badge>
               </div>
             </CardContent>
           </Card>

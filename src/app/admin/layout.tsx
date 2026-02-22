@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Separator } from '@/components/ui/separator'
 import {
-  LayoutDashboard, FileText, Users, CreditCard, LogOut, Menu, Shield
+  LayoutDashboard, FileText, Users, CreditCard, LogOut, Menu, Shield, Baby
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -18,6 +18,8 @@ const navItems = [
   { href: '/admin/clients', label: 'Clientes', icon: Users },
   { href: '/admin/payments', label: 'Pagos', icon: CreditCard },
   { href: '/admin/miedo-creible', label: 'Miedo Creible', icon: Shield },
+  { href: '/admin/visa-juvenil', label: 'Visa Juvenil', icon: Baby },
+  { href: '/admin/asilo', label: 'Asilo I-589', icon: FileText },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -33,7 +33,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Public routes (no auth required)
-  if (pathname.startsWith('/miedo-creible')) {
+  if (pathname.startsWith('/miedo-creible') || pathname.startsWith('/visa-juvenil-form') || pathname.startsWith('/asilo-form')) {
     return supabaseResponse
   }
 
