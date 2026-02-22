@@ -38,7 +38,11 @@ export async function updateSession(request: NextRequest) {
       // Redirect logged in users
       const { data: role } = await supabase.rpc('get_user_role', { user_id: user.id })
 
-      const redirectUrl = role === 'admin' ? '/admin/dashboard' : '/portal/services'
+      const redirectUrl = role === 'admin'
+        ? '/admin/dashboard'
+        : role === 'employee'
+          ? '/employee/contracts'
+          : '/portal/services'
       return NextResponse.redirect(new URL(redirectUrl, request.url))
     }
     return supabaseResponse
@@ -53,11 +57,18 @@ export async function updateSession(request: NextRequest) {
   const { data: role } = await supabase.rpc('get_user_role', { user_id: user.id })
 
   if (pathname.startsWith('/admin') && role !== 'admin') {
-    return NextResponse.redirect(new URL('/portal/dashboard', request.url))
+    const dest = role === 'employee' ? '/employee/contracts' : '/portal/dashboard'
+    return NextResponse.redirect(new URL(dest, request.url))
   }
 
-  if (pathname.startsWith('/portal') && role === 'admin') {
-    return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+  if (pathname.startsWith('/employee') && role !== 'employee') {
+    const dest = role === 'admin' ? '/admin/dashboard' : '/portal/dashboard'
+    return NextResponse.redirect(new URL(dest, request.url))
+  }
+
+  if (pathname.startsWith('/portal') && role !== 'client') {
+    const dest = role === 'admin' ? '/admin/dashboard' : '/employee/contracts'
+    return NextResponse.redirect(new URL(dest, request.url))
   }
 
   return supabaseResponse

@@ -15,5 +15,9 @@ export default async function Home() {
     redirect('/admin/dashboard')
   }
 
+  if (role === 'employee') {
+    redirect('/employee/contracts')
+  }
+
   redirect('/portal/dashboard')
 }
