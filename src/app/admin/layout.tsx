@@ -17,6 +17,7 @@ const navItems = [
   { href: '/admin/cases', label: 'Casos', icon: FileText },
   { href: '/admin/clients', label: 'Clientes', icon: Users },
   { href: '/admin/payments', label: 'Pagos', icon: CreditCard },
+  { href: '/admin/miedo-creible', label: 'Miedo Creible', icon: Shield },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -32,7 +32,12 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse
   }
 
-  // Public routes
+  // Public routes (no auth required)
+  if (pathname.startsWith('/miedo-creible')) {
+    return supabaseResponse
+  }
+
+  // Auth pages
   if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
     if (user) {
       // Redirect logged in users
