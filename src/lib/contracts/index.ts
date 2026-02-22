@@ -75,7 +75,8 @@ const contracts: Record<string, ContractTemplate> = {
     installments: true,
     requiresMinor: true,
     variants: [
-      { label: 'Visa Juvenil', totalPrice: 2500 },
+      { label: 'Individual', totalPrice: 2500 },
+      { label: 'Familiar', totalPrice: 3500 },
     ],
     objetoDelContrato:
       'El CONSULTOR se compromete a brindar asesoria y asistencia en el proceso de obtencion del Estatus Especial de Inmigrante Juvenil (SIJS) para el menor beneficiario, incluyendo la coordinacion con la corte estatal y la presentacion ante USCIS.',
