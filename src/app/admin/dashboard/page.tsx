@@ -7,7 +7,6 @@ import {
   MessageCircle, CalendarClock, CheckCircle, TrendingUp,
   AlertTriangle, CreditCard, Shield, Baby,
 } from 'lucide-react'
-import { QuickContractGenerator } from '@/components/admin/QuickContractGenerator'
 import { format, addDays } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -261,9 +260,6 @@ export default async function AdminDashboardPage() {
           </Card>
         </Link>
       </div>
-
-      {/* ── Quick Contract Generator ── */}
-      <QuickContractGenerator />
 
       {/* ── Zelle Pending Quick Link ── */}
       {(zellePendingCount ?? 0) > 0 && (

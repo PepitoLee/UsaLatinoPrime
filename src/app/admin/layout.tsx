@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Separator } from '@/components/ui/separator'
 import {
-  LayoutDashboard, FileText, Users, CreditCard, LogOut, Menu, Shield, Baby, MessageSquare
+  LayoutDashboard, FileText, Users, CreditCard, LogOut, Menu, Shield, Baby, MessageSquare, PenLine
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/contratos', label: 'Contratos', icon: PenLine },
   { href: '/admin/cases', label: 'Casos', icon: FileText },
   { href: '/admin/clients', label: 'Clientes', icon: Users },
   { href: '/admin/payments', label: 'Pagos', icon: CreditCard },
