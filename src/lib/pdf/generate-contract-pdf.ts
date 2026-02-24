@@ -8,6 +8,12 @@ interface MinorData {
   passport?: string
 }
 
+interface AddonService {
+  name: string
+  price: number
+  etapas: string[]
+}
+
 interface ContractPDFInput {
   serviceName: string
   totalPrice: number
@@ -20,6 +26,7 @@ interface ContractPDFInput {
   minors?: MinorData[]
   objetoDelContrato: string
   etapas: string[]
+  addonServices?: AddonService[]
 }
 
 function formatDateSpanish(dateStr: string): string {
@@ -52,7 +59,7 @@ export function generateContractPDF(input: ContractPDFInput): jsPDF {
   const {
     serviceName, totalPrice, installments, installmentCount = 10,
     clientFullName, clientPassport, clientDOB, clientSignature,
-    minors, objetoDelContrato, etapas,
+    minors, objetoDelContrato, etapas, addonServices,
   } = input
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' })
@@ -142,8 +149,12 @@ export function generateContractPDF(input: ContractPDFInput): jsPDF {
   doc.text('CONTRATO DE PRESTACION DE SERVICIOS', pageWidth / 2, y, { align: 'center' })
   y += 7
   doc.setFontSize(11)
-  doc.text(serviceName.toUpperCase(), pageWidth / 2, y, { align: 'center' })
-  y += 10
+  const allServiceNames = addonServices && addonServices.length > 0
+    ? `${serviceName.toUpperCase()} + ${addonServices.map(a => a.name.toUpperCase()).join(' + ')}`
+    : serviceName.toUpperCase()
+  const titleLines = doc.splitTextToSize(allServiceNames, contentWidth - 20)
+  doc.text(titleLines, pageWidth / 2, y, { align: 'center' })
+  y += titleLines.length * 5 + 5
 
   // Date
   bodyStyle()
@@ -212,6 +223,25 @@ export function generateContractPDF(input: ContractPDFInput): jsPDF {
     y += etapaLines.length * 4 + 2
   })
   y += 4
+
+  // === SERVICIOS ADICIONALES ===
+  if (addonServices && addonServices.length > 0) {
+    addonServices.forEach((addon) => {
+      sectionTitle(`SERVICIO ADICIONAL: ${addon.name.toUpperCase()}`)
+      bodyStyle()
+      doc.text('El servicio adicional comprende las siguientes etapas:', margin + 2, y)
+      y += 6
+      addon.etapas.forEach((etapa, i) => {
+        bodyStyle()
+        const etapaText = `${i + 1}. ${etapa}`
+        const etapaLines = doc.splitTextToSize(etapaText, contentWidth - 8)
+        checkPageBreak(etapaLines.length * 4 + 3)
+        doc.text(etapaLines, margin + 4, y)
+        y += etapaLines.length * 4 + 2
+      })
+      y += 4
+    })
+  }
 
   // === HONORARIOS ===
   sectionTitle('HONORARIOS Y FORMA DE PAGO')

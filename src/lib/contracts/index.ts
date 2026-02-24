@@ -201,3 +201,24 @@ export function getContractTemplate(slug: string): ContractTemplate | null {
 export function getInstallmentCount(variant: PriceVariant): number {
   return variant.installmentCount ?? 10
 }
+
+/** Info básica de un servicio para add-ons */
+export interface AddonServiceInfo {
+  slug: string
+  label: string
+  defaultPrice: number
+}
+
+/** Lista de servicios disponibles como add-on con su precio base */
+export function getAddonServices(): AddonServiceInfo[] {
+  return Object.entries(contracts).map(([slug, template]) => ({
+    slug,
+    label: slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+    defaultPrice: template.variants[0].totalPrice,
+  }))
+}
+
+/** Obtener etapas de un servicio por slug */
+export function getServiceEtapas(slug: string): string[] {
+  return contracts[slug]?.etapas || []
+}

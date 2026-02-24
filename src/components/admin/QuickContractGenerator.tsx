@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import { getInstallmentCount } from '@/lib/contracts'
 import {
   FileText, PenLine, Download, Plus, X, ChevronDown,
-  User, Stamp, Calendar, Baby,
+  User, Stamp, Calendar, Baby, PackagePlus, DollarSign, Hash,
 } from 'lucide-react'
 
 interface MinorData {
@@ -17,6 +17,12 @@ interface MinorData {
   dob: string
   birthplace: string
   passport: string
+}
+
+interface AddonItem {
+  slug: string
+  label: string
+  price: number
 }
 
 interface ContractForm {
@@ -54,9 +60,23 @@ export function QuickContractGenerator() {
   const [generating, setGenerating] = useState(false)
   const [template, setTemplate] = useState<any>(null)
 
+  // Servicios adicionales
+  const [addons, setAddons] = useState<AddonItem[]>([])
+  const [showAddonSelector, setShowAddonSelector] = useState(false)
+
+  // Precio y cuotas personalizables
+  const [customPrice, setCustomPrice] = useState<string>('')
+  const [customInstallments, setCustomInstallments] = useState<string>('')
+  const [useCustomPrice, setUseCustomPrice] = useState(false)
+  const [useCustomInstallments, setUseCustomInstallments] = useState(false)
+
   async function handleServiceChange(slug: string) {
     setSelectedSlug(slug)
     setSelectedVariantIndex(0)
+    setUseCustomPrice(false)
+    setCustomPrice('')
+    setUseCustomInstallments(false)
+    setCustomInstallments('')
     if (!slug) {
       setTemplate(null)
       return
@@ -67,6 +87,48 @@ export function QuickContractGenerator() {
     if (t?.requiresMinor && minors.length === 0) {
       setMinors([emptyMinor()])
     }
+  }
+
+  function addAddon(slug: string) {
+    const svc = SERVICE_OPTIONS.find(s => s.slug === slug)
+    if (!svc) return
+    // Get default price from contract templates
+    import('@/lib/contracts/index').then(({ getContractTemplate }) => {
+      const t = getContractTemplate(slug)
+      const price = t?.variants[0]?.totalPrice || 0
+      setAddons(prev => [...prev, { slug, label: svc.label, price }])
+      setShowAddonSelector(false)
+    })
+  }
+
+  function removeAddon(index: number) {
+    setAddons(prev => prev.filter((_, i) => i !== index))
+  }
+
+  function updateAddonPrice(index: number, price: number) {
+    setAddons(prev => prev.map((a, i) => i === index ? { ...a, price } : a))
+  }
+
+  // Calcular precio total (servicio principal + addons)
+  function getCalculatedTotal(): number {
+    if (!template) return 0
+    const variant = template.variants[selectedVariantIndex]
+    const basePrice = variant.totalPrice
+    const addonsTotal = addons.reduce((sum: number, a: AddonItem) => sum + a.price, 0)
+    return basePrice + addonsTotal
+  }
+
+  // Precio final (custom o calculado)
+  function getFinalPrice(): number {
+    if (useCustomPrice && customPrice) return parseFloat(customPrice)
+    return getCalculatedTotal()
+  }
+
+  // Cuotas finales
+  function getFinalInstallments(): number {
+    if (useCustomInstallments && customInstallments) return parseInt(customInstallments)
+    if (!template) return 10
+    return getInstallmentCount(template.variants[selectedVariantIndex])
   }
 
   function updateMinor(index: number, field: keyof MinorData, value: string) {
@@ -110,20 +172,32 @@ export function QuickContractGenerator() {
     setGenerating(true)
     try {
       const { generateContractPDF } = await import('@/lib/pdf/generate-contract-pdf')
-      const variant = template.variants[selectedVariantIndex]
+      const { getServiceEtapas } = await import('@/lib/contracts/index')
       const serviceLabel = SERVICE_OPTIONS.find(s => s.slug === selectedSlug)?.label || selectedSlug
+
+      const finalPrice = getFinalPrice()
+      const finalInstallments = getFinalInstallments()
+      const hasInstallments = template.installments || useCustomInstallments
+
+      // Preparar servicios adicionales para el PDF
+      const addonServices = addons.map(a => ({
+        name: a.label,
+        price: a.price,
+        etapas: getServiceEtapas(a.slug),
+      }))
 
       const pdf = generateContractPDF({
         serviceName: serviceLabel,
-        totalPrice: variant.totalPrice,
-        installments: template.installments,
-        installmentCount: getInstallmentCount(variant),
+        totalPrice: finalPrice,
+        installments: hasInstallments,
+        installmentCount: finalInstallments,
         clientFullName: contractForm.clientFullName.trim(),
         clientPassport: contractForm.clientPassport.trim(),
         clientDOB: contractForm.clientDOB,
         clientSignature: contractForm.clientSignature.trim(),
         objetoDelContrato: template.objetoDelContrato,
         etapas: template.etapas,
+        addonServices: addonServices.length > 0 ? addonServices : undefined,
         ...(template.requiresMinor && {
           minors: minors.map(m => ({
             fullName: m.fullName.trim(),
@@ -161,6 +235,12 @@ export function QuickContractGenerator() {
     setTemplate(null)
     setContractForm({ clientFullName: '', clientPassport: '', clientDOB: '', clientSignature: '' })
     setMinors([emptyMinor()])
+    setAddons([])
+    setShowAddonSelector(false)
+    setCustomPrice('')
+    setCustomInstallments('')
+    setUseCustomPrice(false)
+    setUseCustomInstallments(false)
   }
 
   return (
@@ -206,7 +286,7 @@ export function QuickContractGenerator() {
                 <button
                   key={i}
                   type="button"
-                  onClick={() => setSelectedVariantIndex(i)}
+                  onClick={() => { setSelectedVariantIndex(i); setUseCustomPrice(false); setCustomPrice(''); }}
                   className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
                     selectedVariantIndex === i
                       ? 'border-[#002855] bg-[#002855] text-white'
@@ -220,13 +300,159 @@ export function QuickContractGenerator() {
           </div>
         )}
 
-        {/* Price display (single variant) */}
-        {template && template.variants.length === 1 && (
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#002855]/5 border border-[#002855]/10">
-            <span className="text-sm text-[#002855]/70">Precio:</span>
-            <span className="text-sm font-bold text-[#002855]">${template.variants[0].totalPrice.toLocaleString()} USD</span>
-            {template.installments && (
-              <span className="text-xs text-gray-500 ml-1">({getInstallmentCount(template.variants[0])} cuotas de ${Math.round(template.variants[0].totalPrice / getInstallmentCount(template.variants[0])).toLocaleString()})</span>
+        {/* === SERVICIOS ADICIONALES === */}
+        {template && (
+          <div className="space-y-2">
+            {addons.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-[#002855] flex items-center gap-1.5">
+                  <PackagePlus className="w-3.5 h-3.5 text-[#F2A900]" />
+                  Servicios Adicionales
+                </Label>
+                {addons.map((addon, i) => (
+                  <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#F2A900]/20 bg-[#FFFBF0]">
+                    <span className="flex-1 text-sm text-[#002855]">{addon.label}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-gray-500">$</span>
+                      <input
+                        type="number"
+                        value={addon.price}
+                        onChange={(e) => updateAddonPrice(i, parseFloat(e.target.value) || 0)}
+                        className="w-20 h-7 text-sm text-right rounded border border-gray-200 px-2"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeAddon(i)}
+                      className="flex items-center justify-center w-6 h-6 rounded border border-red-200 bg-white text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Addon selector dropdown */}
+            {showAddonSelector ? (
+              <div className="space-y-1.5">
+                <div className="relative">
+                  <select
+                    onChange={(e) => { if (e.target.value) addAddon(e.target.value); }}
+                    className="w-full h-9 rounded-lg border border-[#F2A900]/30 bg-[#FFFBF0] px-3 pr-10 text-sm appearance-none cursor-pointer"
+                    defaultValue=""
+                  >
+                    <option value="">Seleccione servicio adicional...</option>
+                    {SERVICE_OPTIONS.filter(s => s.slug !== selectedSlug && !addons.some(a => a.slug === s.slug)).map(s => (
+                      <option key={s.slug} value={s.slug}>{s.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddonSelector(false)}
+                  className="text-xs text-gray-400 hover:text-gray-600"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowAddonSelector(true)}
+                className="w-full flex items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-[#F2A900]/30 hover:border-[#F2A900] bg-[#FFFBF0] hover:bg-[#FFF8E1] px-3 py-2 text-xs font-medium text-[#002855]/60 hover:text-[#002855] transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Agregar Servicio Adicional
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* === RESUMEN DE PRECIO Y CUOTAS === */}
+        {template && (
+          <div className="space-y-3 rounded-lg border border-[#002855]/10 bg-[#002855]/5 p-3">
+            {/* Desglose */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-sm">
+                <span className="text-[#002855]/70">{SERVICE_OPTIONS.find(s => s.slug === selectedSlug)?.label}:</span>
+                <span className="font-medium text-[#002855]">${template.variants[selectedVariantIndex].totalPrice.toLocaleString()}</span>
+              </div>
+              {addons.map((a, i) => (
+                <div key={i} className="flex justify-between text-sm">
+                  <span className="text-[#002855]/70">{a.label}:</span>
+                  <span className="font-medium text-[#002855]">${a.price.toLocaleString()}</span>
+                </div>
+              ))}
+              {addons.length > 0 && (
+                <div className="border-t border-[#002855]/10 pt-1 flex justify-between text-sm">
+                  <span className="text-[#002855]/70 font-medium">Subtotal:</span>
+                  <span className="font-bold text-[#002855]">${getCalculatedTotal().toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Precio personalizado */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="customPrice"
+                checked={useCustomPrice}
+                onChange={(e) => { setUseCustomPrice(e.target.checked); if (!e.target.checked) setCustomPrice(''); }}
+                className="rounded border-gray-300"
+              />
+              <label htmlFor="customPrice" className="text-xs text-[#002855]/70 flex items-center gap-1">
+                <DollarSign className="w-3 h-3" />
+                Precio personalizado
+              </label>
+              {useCustomPrice && (
+                <input
+                  type="number"
+                  value={customPrice}
+                  onChange={(e) => setCustomPrice(e.target.value)}
+                  placeholder={getCalculatedTotal().toString()}
+                  className="w-24 h-7 text-sm text-right rounded border border-[#002855]/20 px-2"
+                />
+              )}
+            </div>
+
+            {/* Cuotas personalizadas */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="customInstallments"
+                checked={useCustomInstallments}
+                onChange={(e) => { setUseCustomInstallments(e.target.checked); if (!e.target.checked) setCustomInstallments(''); }}
+                className="rounded border-gray-300"
+              />
+              <label htmlFor="customInstallments" className="text-xs text-[#002855]/70 flex items-center gap-1">
+                <Hash className="w-3 h-3" />
+                Cuotas personalizadas
+              </label>
+              {useCustomInstallments && (
+                <input
+                  type="number"
+                  value={customInstallments}
+                  onChange={(e) => setCustomInstallments(e.target.value)}
+                  placeholder="11"
+                  min="1"
+                  max="36"
+                  className="w-16 h-7 text-sm text-center rounded border border-[#002855]/20 px-2"
+                />
+              )}
+            </div>
+
+            {/* Total final */}
+            <div className="border-t border-[#002855]/20 pt-2 flex justify-between items-center">
+              <span className="text-sm font-bold text-[#002855]">Total del contrato:</span>
+              <span className="text-lg font-bold text-[#002855]">${getFinalPrice().toLocaleString()} USD</span>
+            </div>
+            {(template.installments || useCustomInstallments) && (
+              <div className="flex justify-between text-xs text-[#002855]/60">
+                <span>{getFinalInstallments()} cuotas mensuales</span>
+                <span>${Math.round(getFinalPrice() / getFinalInstallments()).toLocaleString()} USD/mes</span>
+              </div>
             )}
           </div>
         )}
