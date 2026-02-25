@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { QuickContractGenerator } from '@/components/admin/QuickContractGenerator'
-import { FileText, Plus, Pencil, Download, Trash2, ChevronLeft } from 'lucide-react'
+import { FileText, Plus, Pencil, Download, Trash2, ChevronLeft, Send, Link2, CheckCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface ContractRow {
@@ -35,10 +35,14 @@ interface ContractRow {
   objeto_del_contrato: string
   etapas: string[]
   status: string
+  signing_token: string | null
+  client_signature_image: string | null
+  signed_at: string | null
 }
 
 const statusLabels: Record<string, string> = {
   borrador: 'Borrador',
+  pendiente_firma: 'Pendiente Firma',
   firmado: 'Firmado',
   activo: 'Activo',
   completado: 'Completado',
@@ -46,6 +50,7 @@ const statusLabels: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   borrador: 'bg-gray-100 text-gray-700',
+  pendiente_firma: 'bg-amber-100 text-amber-800',
   firmado: 'bg-blue-100 text-blue-800',
   activo: 'bg-green-100 text-green-800',
   completado: 'bg-emerald-100 text-emerald-800',
@@ -98,6 +103,32 @@ export default function ContratosPage() {
     }
   }
 
+  async function handleSendToClient(contract: ContractRow) {
+    try {
+      const res = await fetch('/api/contracts/generate-signing-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contract_id: contract.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Error al generar enlace')
+        return
+      }
+      await navigator.clipboard.writeText(data.url)
+      toast.success('Enlace copiado al portapapeles. Env\u00edeselo al cliente.')
+      loadContracts()
+    } catch {
+      toast.error('Error de conexi\u00f3n')
+    }
+  }
+
+  async function handleCopyLink(token: string) {
+    const url = `${window.location.origin}/contrato/${token}`
+    await navigator.clipboard.writeText(url)
+    toast.success('Enlace copiado al portapapeles')
+  }
+
   async function handleDownloadPDF(contract: ContractRow) {
     try {
       const { generateContractPDF } = await import('@/lib/pdf/generate-contract-pdf')
@@ -117,6 +148,7 @@ export default function ContratosPage() {
         initialPayment: contract.initial_payment > 0 ? contract.initial_payment : undefined,
         paymentSchedule: contract.payment_schedule?.length > 0 ? contract.payment_schedule : undefined,
         minors: contract.minors?.length > 0 ? contract.minors : undefined,
+        clientSignatureImage: contract.client_signature_image || undefined,
       })
 
       const arrayBuffer = pdf.output('arraybuffer')
@@ -227,6 +259,11 @@ export default function ContratosPage() {
                       <span className="text-xs text-gray-400">
                         {new Date(c.created_at).toLocaleDateString('es-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>
+                      {c.signed_at && (
+                        <span className="text-xs text-green-600 font-medium">
+                          Firmado {new Date(c.signed_at).toLocaleDateString('es-US', { day: 'numeric', month: 'short' })}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -238,10 +275,26 @@ export default function ContratosPage() {
                       className="h-8 text-xs rounded border border-gray-200 bg-white px-2 cursor-pointer"
                     >
                       <option value="borrador">Borrador</option>
+                      <option value="pendiente_firma">Pendiente Firma</option>
                       <option value="firmado">Firmado</option>
                       <option value="activo">Activo</option>
                       <option value="completado">Completado</option>
                     </select>
+
+                    {/* Send to client / Copy link */}
+                    {c.signing_token ? (
+                      <Button variant="outline" size="sm" onClick={() => handleCopyLink(c.signing_token!)} title="Copiar enlace de firma" className="text-amber-600 hover:text-amber-800 hover:bg-amber-50">
+                        <Link2 className="w-3.5 h-3.5" />
+                      </Button>
+                    ) : c.status === 'firmado' || c.status === 'activo' || c.status === 'completado' ? (
+                      <Button variant="outline" size="sm" disabled title="Ya firmado" className="text-green-600">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                      </Button>
+                    ) : (
+                      <Button variant="outline" size="sm" onClick={() => handleSendToClient(c)} title="Enviar al cliente para firmar" className="text-[#F2A900] hover:text-[#D4940A] hover:bg-amber-50">
+                        <Send className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
 
                     <Button variant="outline" size="sm" onClick={() => handleDownloadPDF(c)} title="Descargar PDF">
                       <Download className="w-3.5 h-3.5" />

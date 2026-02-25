@@ -35,6 +35,7 @@ interface ContractPDFInput {
   addonServices?: AddonService[]
   initialPayment?: number
   paymentSchedule?: PaymentScheduleItem[]
+  clientSignatureImage?: string
 }
 
 function formatDateSpanish(dateStr: string): string {
@@ -68,7 +69,7 @@ export function generateContractPDF(input: ContractPDFInput): jsPDF {
     serviceName, totalPrice, installments, installmentCount = 10,
     clientFullName, clientPassport, clientDOB, clientSignature,
     minors, objetoDelContrato, etapas, addonServices,
-    initialPayment, paymentSchedule,
+    initialPayment, paymentSchedule, clientSignatureImage,
   } = input
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' })
@@ -389,7 +390,20 @@ export function generateContractPDF(input: ContractPDFInput): jsPDF {
   doc.setFontSize(22)
   doc.setTextColor(20, 20, 80)
   doc.text('Jimy Henry Orellana', leftX + 2, y)
-  if (clientSignature.trim()) {
+
+  if (clientSignatureImage) {
+    // Draw the real signature image from canvas
+    try {
+      const sigWidth = colWidth - 4
+      const sigHeight = 18
+      doc.addImage(clientSignatureImage, 'PNG', rightX + 2, y - 14, sigWidth, sigHeight)
+    } catch {
+      // Fallback to text if image fails
+      if (clientSignature.trim()) {
+        doc.text(clientSignature, rightX + 2, y)
+      }
+    }
+  } else if (clientSignature.trim()) {
     doc.text(clientSignature, rightX + 2, y)
   }
   y += 8
