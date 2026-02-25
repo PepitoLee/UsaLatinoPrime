@@ -95,7 +95,7 @@ export function RenunciaRow({ submission }: { submission: Submission }) {
       doc.setFont(FONT, 'normal')
       doc.setFontSize(7)
       doc.setTextColor(160, 160, 160)
-      doc.text('UsaLatinoPrime - Voluntary Relinquishment of Parental Custody', margin, pageHeight - 12)
+      doc.text('Voluntary Relinquishment of Parental Custody', margin, pageHeight - 12)
       const genDate = new Date().toLocaleString('es-US')
       doc.text(`Generated: ${genDate}`, pageWidth - margin, pageHeight - 12, { align: 'right' })
       doc.setDrawColor(230, 230, 230)
@@ -111,16 +111,6 @@ export function RenunciaRow({ submission }: { submission: Submission }) {
     }
 
     // === HEADER ===
-    doc.setFont(FONT, 'normal')
-    doc.setFontSize(18)
-    doc.setTextColor(...NAVY)
-    doc.text('UsaLatinoPrime', margin, y)
-    y += 8
-
-    // Gold line
-    doc.setDrawColor(242, 169, 0)
-    doc.setLineWidth(0.8)
-    doc.line(margin, y, pageWidth - margin, y)
     y += 10
 
     // Title
