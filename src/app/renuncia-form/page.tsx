@@ -78,17 +78,17 @@ export default function RenunciaFormPage() {
     if (!validate()) { toast.error('Por favor complete los campos requeridos'); return }
 
     const body = {
-      madre_nombre_completo: madreNombre,
-      madre_nacionalidad: madreNacionalidad,
-      madre_dni: madreDni,
-      madre_direccion: madreDireccion,
-      hija_nombre_completo: hijaNombre,
-      hija_fecha_nacimiento: hijaFechaNacimiento,
-      hija_municipio_acta: hijaMunicipio,
-      padre_nombre_completo: padreNombre,
-      padre_pasaporte: padrePasaporte,
-      padre_residencia: padreResidencia,
-      padre_direccion_hija: padreDireccionHija,
+      mother_full_name: madreNombre,
+      mother_nationality: madreNacionalidad,
+      mother_dni: madreDni,
+      mother_address: madreDireccion,
+      daughter_full_name: hijaNombre,
+      daughter_dob: hijaFechaNacimiento,
+      daughter_birth_certificate_municipality: hijaMunicipio,
+      father_full_name: padreNombre,
+      father_passport: padrePasaporte,
+      father_country_state: padreResidencia,
+      father_address_with_daughter: padreDireccionHija,
     }
 
     setSubmitting(true)
