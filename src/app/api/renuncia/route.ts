@@ -5,9 +5,9 @@ import { createServiceClient } from '@/lib/supabase/service'
 const renunciaSchema = z.object({
   // Datos del firmante (mapped to mother/father fields)
   mother_full_name: z.string().min(2, 'Nombre completo requerido'),
-  mother_nationality: z.string().min(1, 'Nacionalidad requerida'),
-  mother_dni: z.string().min(1, 'DNI requerido'),
-  mother_address: z.string().min(1, 'Direccion requerida'),
+  mother_nationality: z.string().default(''),
+  mother_dni: z.string().default(''),
+  mother_address: z.string().default(''),
 
   // Datos del hijo/a
   daughter_full_name: z.string().min(2, 'Nombre completo requerido'),
