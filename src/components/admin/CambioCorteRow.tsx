@@ -118,322 +118,245 @@ export function CambioCorteRow({ submission }: { submission: Submission }) {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' })
     const pw = doc.internal.pageSize.getWidth()
     const ph = doc.internal.pageSize.getHeight()
-    const ml = 20 // margin left
-    const mr = 20
+    const ml = 25
+    const mr = 25
     const cw = pw - ml - mr
     let y = 0
-    const F = 'helvetica'
-    const NAVY: [number, number, number] = [0, 40, 85]
+    const F = 'times'
     const BLACK: [number, number, number] = [0, 0, 0]
-    const GRAY: [number, number, number] = [80, 80, 80]
 
-    function resetY() { y = 18 }
+    function resetY() { y = 22 }
+    function bold(sz: number = 12) { doc.setFont(F, 'bold'); doc.setFontSize(sz); doc.setTextColor(...BLACK) }
+    function normal(sz: number = 12) { doc.setFont(F, 'normal'); doc.setFontSize(sz); doc.setTextColor(...BLACK) }
+    function italic(sz: number = 12) { doc.setFont(F, 'italic'); doc.setFontSize(sz); doc.setTextColor(...BLACK) }
+    function center(txt: string) { doc.text(txt, pw / 2, y, { align: 'center' }) }
+    function left(txt: string, x: number = ml) { doc.text(txt, x, y) }
+    function right(txt: string) { doc.text(txt, pw - mr, y, { align: 'right' }) }
 
-    function text(txt: string, x: number, yy: number, opts?: any) {
-      doc.text(txt, x, yy, opts)
+    function underlineCenter(txt: string, sz: number = 12) {
+      doc.setFontSize(sz)
+      const tw = doc.getTextWidth(txt)
+      const tx = (pw - tw) / 2
+      doc.text(txt, pw / 2, y, { align: 'center' })
+      doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.3)
+      doc.line(tx, y + 0.8, tx + tw, y + 0.8)
     }
 
-    function bold(size: number = 10) { doc.setFont(F, 'bold'); doc.setFontSize(size) }
-    function normal(size: number = 10) { doc.setFont(F, 'normal'); doc.setFontSize(size) }
-    function italic(size: number = 10) { doc.setFont(F, 'italic'); doc.setFontSize(size) }
-    function color(c: [number, number, number]) { doc.setTextColor(...c) }
-
-    function paragraph(txt: string, size: number = 9.5) {
-      normal(size); color(BLACK)
-      const lines = doc.splitTextToSize(txt, cw)
-      checkPage(lines.length * 4.2 + 3)
-      doc.text(lines, ml, y)
-      y += lines.length * 4.2 + 3
+    function underlineLeft(txt: string, x: number = ml) {
+      const tw = doc.getTextWidth(txt)
+      doc.text(txt, x, y)
+      doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.3)
+      doc.line(x, y + 0.8, x + tw, y + 0.8)
     }
 
-    function line() {
-      doc.setDrawColor(0, 0, 0)
-      doc.setLineWidth(0.3)
-      doc.line(ml, y, pw - mr, y)
-      y += 3
-    }
-
-    function checkPage(need: number) {
-      if (y + need > ph - 20) {
-        doc.addPage()
-        resetY()
+    function dashedLine(x1: number, x2: number) {
+      doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.3)
+      const dashLen = 2; const gapLen = 1.5
+      let cx = x1
+      while (cx < x2) {
+        const end = Math.min(cx + dashLen, x2)
+        doc.line(cx, y, end, y)
+        cx = end + gapLen
       }
     }
 
-    // ============================================
-    // PAGE 1 - COVER LETTER / MOTION
-    // ============================================
-    resetY()
+    function paragraph(txt: string, sz: number = 11, indent: number = 0) {
+      normal(sz)
+      const lines = doc.splitTextToSize(txt, cw - indent)
+      if (y + lines.length * 4.5 > ph - 20) { doc.addPage(); resetY() }
+      doc.text(lines, ml + indent, y)
+      y += lines.length * 4.5 + 2
+    }
 
-    // Header - Client info
-    bold(10); color(BLACK)
-    text(s.client_full_name.toUpperCase(), ml, y)
-    y += 5
-    normal(9); color(GRAY)
-    text(s.client_address_street.toUpperCase(), ml, y); y += 4
-    text(`${s.client_address_city.toUpperCase()}, ${s.client_address_state.toUpperCase()} ${s.client_address_zip}`, ml, y); y += 4
-    text(s.client_phone, ml, y); y += 5
-    normal(9); color(BLACK)
-    text('NOT DETAINED', ml, y); y += 8
-
-    // Court header
-    bold(9); color(BLACK)
-    text('UNITED STATES DEPARTMENT OF JUSTICE', pw / 2, y, { align: 'center' }); y += 4
-    text('EXECUTIVE OFFICE FOR IMMIGRATION REVIEW', pw / 2, y, { align: 'center' }); y += 5
-    normal(9); color(GRAY)
-    text(s.current_court_street, pw / 2, y, { align: 'center' }); y += 4
-    text(s.current_court_city_state_zip, pw / 2, y, { align: 'center' }); y += 4
-    bold(9); color(BLACK)
-    text('IMMIGRATION COURTS', pw / 2, y, { align: 'center' }); y += 5
-
-    normal(9); color(BLACK)
-    text('OFFICE OF THE IMMIGRATION JUDGE', pw / 2, y, { align: 'center' }); y += 8
-
-    // Case block
-    line()
-    normal(9); color(BLACK)
-    text('In the Matter of:', ml, y); y += 5
-    bold(9)
-    text(s.client_full_name.toUpperCase(), ml, y)
-    text(`File No: ${s.file_number}`, pw - mr, y, { align: 'right' }); y += 5
-    normal(9)
-    text('Respondent(s)', ml, y); y += 4
-    text('In removal proceedings.', ml, y); y += 5
-    line()
-
-    // Judge and hearing
-    normal(9); color(BLACK)
-    text('Immigration Judge:', ml, y)
-    text(`Next Hearing: ${formatHearingDateLong(s.next_hearing_date, s.next_hearing_time)}`, pw - mr, y, { align: 'right' }); y += 5
-    bold(9)
-    text(`Hon. ${s.judge_name}`, ml, y); y += 8
-
-    // Title
-    bold(11); color(NAVY)
-    text("RESPONDENT\u2019S MOTION TO CHANGE VENUE", pw / 2, y, { align: 'center' }); y += 10
-
-    // Body
-    bold(10); color(BLACK)
-    text('MOTION TO CHANGE VENUE', ml, y); y += 5
-    normal(9); color(GRAY)
-    text(`Date: ${formatDateEnglish(s.document_date)}`, ml, y); y += 5
-    text(`${s.current_court_name}`, ml, y); y += 4
-    text(s.current_court_street, ml, y); y += 4
-    text(s.current_court_city_state_zip, ml, y); y += 6
-    normal(9); color(BLACK)
-    text(`Re: Motion to Change Venue`, ml, y); y += 4
-    text(`Applicant: ${s.client_full_name.toUpperCase()}`, ml, y); y += 4
-    text(`A#: ${s.file_number}`, ml, y); y += 7
-
-    paragraph(`Honorable Immigration Judge,`)
-    y += 1
-
-    // Extract new court short name (e.g. "Immigration Court – Salt Lake City" -> "Salt Lake City Immigration Court")
-    const newCourtShort = s.new_court_name.replace(/Immigration Court\s*[-–]\s*/i, '') + ' Immigration Court'
+    // Short names for courts
+    const newCourtShort = s.new_court_name.replace(/Immigration Court\s*[-\u2013]\s*/i, '') + ' Immigration Court'
     const currentCourtShort = currentCourtCity + ' Immigration Court'
 
-    paragraph(
-      `I respectfully request that the Court transfer my removal proceedings from the ${currentCourtShort} to the ${newCourtShort}, as I have permanently relocated to the State of ${s.new_address_state}.`
-    )
+    // ============================================
+    // PAGE 1 - COVER PAGE (matches 1.png exactly)
+    // ============================================
+    resetY()
 
-    paragraph(`My current address is:`)
-    y -= 1
-    normal(9); color(BLACK)
-    text(s.new_address_street, ml + 4, y); y += 4
-    text(`${s.new_address_city}, ${s.new_address_state} ${s.new_address_zip}`, ml + 4, y); y += 4
-    text(`Phone: ${s.client_phone}`, ml + 4, y); y += 6
+    // Client info - top left
+    bold(12); left(s.client_full_name.toUpperCase()); y += 6
+    normal(12); left(`${s.client_address_street.toUpperCase()} ${s.client_address_city.toUpperCase()}, ${s.client_address_state.toUpperCase()} -${s.client_address_zip}`); y += 5
+    left(s.client_phone); y += 6
+    bold(12); left('NOT DETAINED'); y += 10
 
-    paragraph(
-      `I have permanently relocated to ${s.new_address_state} for employment and stability reasons. My residence is now established in ${s.new_address_city}, ${s.new_address_state}, and traveling to ${currentCourtCity}, ${s.current_court_city_state_zip.split(',')[1]?.trim().split(' ')[0] || ''} for future hearings would create significant financial and logistical hardship.`
-    )
+    // UNITED STATES DEPARTMENT OF JUSTICE
+    bold(13); center('UNITED STATES DEPARTMENT OF JUSTICE'); y += 6
+    bold(12); center('EXECUTIVE OFFICE FOR IMMIGRATION REVIEW'); y += 8
 
-    paragraph(
-      `Because my current residence falls within the jurisdiction of the ${newCourtShort}, transferring venue will allow me to fully comply with all court hearings and continue participating properly in these proceedings.`
-    )
+    // Court address - centered, bold, underlined
+    bold(12)
+    underlineCenter(s.current_court_street, 12); y += 5
+    center(s.current_court_city_state_zip); y += 5
+    bold(13); center('IMMIGRATION COURTS'); y += 8
 
-    paragraph(
-      `For these reasons, I respectfully request that this Motion to Change Venue be granted and that my case be transferred to:`
-    )
+    bold(12); center('OFFICE OF THE IMMIGRATION JUDGE'); y += 16
 
-    y -= 1
-    normal(9); color(BLACK)
-    bold(9)
-    text(s.new_court_name, ml + 4, y); y += 4
-    normal(9)
-    text(s.new_court_street, ml + 4, y); y += 4
-    text(s.new_court_city_state_zip, ml + 4, y); y += 8
+    // Case block with dashed border
+    const boxX = ml
+    const boxY = y - 2
+    const boxW = cw * 0.65
+    const boxH = 42
 
-    paragraph(`Respectfully submitted,`)
-    y += 2
-    text('-'.repeat(40), ml, y); y += 5
-    bold(9); color(BLACK)
-    text(s.client_full_name.toUpperCase(), ml, y); y += 4
-    normal(9)
-    text(`A#: ${s.file_number}`, ml, y); y += 4
-    text(s.new_address_street, ml, y); y += 4
-    text(`${s.new_address_city}, ${s.new_address_state} ${s.new_address_zip}`, ml, y); y += 4
-    text(`Phone: ${s.client_phone}`, ml, y); y += 6
+    // Draw dashed border rectangle
+    doc.setDrawColor(180, 120, 0); doc.setLineWidth(0.4)
+    // Top
+    let cx = boxX; while (cx < boxX + boxW) { const end = Math.min(cx + 3, boxX + boxW); doc.line(cx, boxY, end, boxY); cx = end + 2 }
+    // Bottom
+    cx = boxX; while (cx < boxX + boxW) { const end = Math.min(cx + 3, boxX + boxW); doc.line(cx, boxY + boxH, end, boxY + boxH); cx = end + 2 }
+    // Left
+    let cy = boxY; while (cy < boxY + boxH) { const end = Math.min(cy + 3, boxY + boxH); doc.line(boxX, cy, boxX, end); cy = end + 2 }
+    // Right
+    cy = boxY; while (cy < boxY + boxH) { const end = Math.min(cy + 3, boxY + boxH); doc.line(boxX + boxW, cy, boxX + boxW, end); cy = end + 2 }
 
-    normal(9); color(BLACK)
-    text('PRO-SE', ml, y)
-    text('NOT DETAINED', pw - mr, y, { align: 'right' })
+    // Content inside box
+    normal(12); left('In the Matter of:', ml + 4); y += 7
+    bold(12); left(s.client_full_name.toUpperCase(), ml + 4)
+
+    // File No on the right (outside the box, at same height)
+    normal(12)
+    doc.text('File No: ', pw - mr - doc.getTextWidth(`File No: ${s.file_number}`), y)
+    bold(12)
+    doc.text(s.file_number, pw - mr - doc.getTextWidth(s.file_number), y)
+    y += 10
+
+    normal(12); left('Respondent(s)', ml + 4); y += 5
+    italic(12); left('In removal proceedings.', ml + 4); y += 14
+
+    // Judge and hearing
+    bold(12); left('Immigration Judge:')
+    normal(12); doc.text(`Next Hearing: ${formatHearingDateLong(s.next_hearing_date, s.next_hearing_time)}`, pw / 2, y); y += 6
+    bold(12); left(`Hon. ${s.judge_name}`); y += 16
+
+    // Title - centered, bold, underlined
+    bold(13)
+    underlineCenter("RESPONDENT\u2019S MOTION TO CHANGE VENUE", 13)
 
     // ============================================
-    // PAGE 2 - FORMAL EOIR MOTION
+    // PAGE 2 - MOTION LETTER BODY (matches 2.png)
     // ============================================
     doc.addPage()
     resetY()
-
-    // Header
-    bold(10); color(BLACK)
-    text(s.client_full_name.toUpperCase(), ml, y); y += 5
-    normal(9); color(GRAY)
-    text(s.client_address_street.toUpperCase(), ml, y); y += 4
-    text(`${s.client_address_city.toUpperCase()}, ${s.client_address_state.toUpperCase()} ${s.client_address_zip}`, ml, y); y += 4
-    text(s.client_phone, ml, y); y += 7
-
-    bold(9); color(BLACK)
-    text('UNITED STATES DEPARTMENT OF JUSTICE', pw / 2, y, { align: 'center' }); y += 4
-    text('EXECUTIVE OFFICE FOR IMMIGRATION REVIEW', pw / 2, y, { align: 'center' }); y += 5
-    normal(9); color(GRAY)
-    text(s.current_court_street, pw / 2, y, { align: 'center' }); y += 4
-    text(s.current_court_city_state_zip, pw / 2, y, { align: 'center' }); y += 4
-    bold(9); color(BLACK)
-    text('IMMIGRATION COURTS', pw / 2, y, { align: 'center' }); y += 5
-
-    line()
-
-    // Case block
-    normal(9); color(BLACK)
-    text('In Matter(s) of:', ml, y); y += 5
-    bold(9)
-    text(s.client_full_name.toUpperCase(), ml, y)
-    text(`File No.: ${s.file_number}`, pw - mr, y, { align: 'right' }); y += 5
-    normal(9)
-    text('Respondent', ml, y); y += 4
-    text('In Removal Proceedings', ml, y); y += 5
-
-    // Judge
-    normal(9)
-    text('Immigration Judge:', ml, y)
-    text('Next Hearing:', pw / 2 + 10, y); y += 5
-    bold(9)
-    text(s.judge_name.toUpperCase(), ml, y)
-    text(formatHearingDateShort(s.next_hearing_date, s.next_hearing_time), pw / 2 + 10, y); y += 5
-
-    line()
-    y += 3
 
     // Title
-    bold(11); color(NAVY)
-    text("RESPONDENT\u2019S MOTION TO", pw / 2, y, { align: 'center' }); y += 5
-    text('CHANGE VENUE', pw / 2, y, { align: 'center' }); y += 8
+    bold(14); center('MOTION TO CHANGE VENUE'); y += 8
 
-    // Body
+    // Date & court info
+    normal(11)
+    left(`Date: ${formatDateEnglish(s.document_date)}`); y += 5
+    left(`${s.current_court_name.replace(/-/g, '\u2013')}`); y += 4
+    bold(11)
+    left(s.current_court_street); y += 4
+    left(s.current_court_city_state_zip); y += 6
+
+    // Re: line
+    normal(11)
+    left('Re: Motion to Change Venue'); y += 5
+    left(`Applicant: ${s.client_full_name.toUpperCase()}`); y += 5
+    left(`A#: ${s.file_number}`); y += 7
+
+    // Letter body
+    paragraph('Honorable Immigration Judge,', 11)
+    y += 1
+
     paragraph(
-      `Respondent, ${s.client_full_name.toUpperCase()}, moves this Honorable Court to change the venue of her removal proceedings from ${s.current_court_street}, ${s.current_court_city_state_zip} to ${s.new_court_city_state_zip.toUpperCase()}. I seek this change of venue pursuant to 8 CFR \u00A7 1003.20.`
+      `I respectfully request that the Court transfer my removal proceedings from the ${currentCourtShort} to the ${newCourtShort}, as I have permanently relocated to the State of ${s.new_address_state}.`, 11
     )
 
-    paragraph(`In support of this motion, I state as follows:`)
-    y += 2
+    paragraph('My current address is:', 11)
+    y -= 1
+    bold(11)
+    left(s.new_address_street, ml + 6); y += 5
+    left(`${s.new_address_city}, ${s.new_address_state} ${s.new_address_zip}`, ml + 6); y += 5
+    normal(11)
+    left(`Phone: ${s.client_phone}`, ml + 6); y += 6
 
-    // Numbered points
-    paragraph(`1. My name is ${s.client_full_name.toUpperCase()}. I am the respondent in the above-captioned proceedings.`)
-    paragraph(`2. My hearing is currently scheduled before the ${currentCourtShort}.`)
-    paragraph(`3. I have recently relocated to ${s.new_address_city}, ${s.new_address_state}, and my new address is ${s.new_address_street}, ${s.new_address_city}, ${s.new_address_state} ${s.new_address_zip}.`)
-    paragraph(`4. My current residence falls within the jurisdiction of the ${s.new_court_name}.`)
-    paragraph(`5. Traveling to ${currentCourtCity} for future hearings would create significant financial and logistical hardship.`)
-    paragraph(`6. I respectfully request that this Court transfer my case to the ${s.new_court_name}, located at ${s.new_court_street}, ${s.new_court_city_state_zip}.`)
+    paragraph(
+      `I have permanently relocated to ${s.new_address_state} for employment and stability reasons. My residence is now established in ${s.new_address_city}, ${s.new_address_state}, and traveling to ${currentCourtCity}, ${s.current_court_city_state_zip.split(',')[1]?.trim().split(' ')[0] || ''} for future hearings would create significant financial and logistical hardship.`, 11
+    )
 
-    y += 4
-    paragraph(`Respectfully submitted,`)
+    paragraph(
+      `Because my current residence falls within the jurisdiction of the ${newCourtShort}, transferring venue will allow me to fully comply with all court hearings and continue participating properly in these proceedings.`, 11
+    )
+
+    paragraph(
+      `For these reasons, I respectfully request that this Motion to Change Venue be granted and that my case be transferred to:`, 11
+    )
+
     y += 1
-    text('[FIRMA]', ml + 4, y); y += 6
-    text('-'.repeat(40), ml, y); y += 6
+    bold(11)
+    left(s.new_court_name.replace(/-/g, '\u2013'), ml + 6); y += 5
+    normal(11)
+    left(s.new_court_street, ml + 6); y += 4
+    left(s.new_court_city_state_zip, ml + 6); y += 8
 
-    normal(9); color(BLACK)
-    text('PRO-SE', ml, y)
-    text('NOT DETAINED', pw - mr, y, { align: 'right' })
+    paragraph('Respectfully submitted,', 11)
+    y += 10
+
+    // Signature block
+    normal(11)
+    left('-'.repeat(35)); y += 6
+    bold(11); left(s.client_full_name.toUpperCase()); y += 5
+    normal(11)
+    left(`A#: ${s.file_number}`); y += 5
+    left(s.new_address_street); y += 4
+    left(`${s.new_address_city}, ${s.new_address_state} ${s.new_address_zip}`); y += 4
+    left(`Phone: ${s.client_phone}`); y += 8
+
+    bold(11); left('PRO-SE')
+    right('NOT DETAINED')
 
     // ============================================
-    // PAGE 3 - CERTIFICATE OF SERVICE + ORDER
+    // PAGE 3 - FORMAL EOIR MOTION (matches 3.png)
     // ============================================
     doc.addPage()
     resetY()
 
-    // Header
-    bold(10); color(BLACK)
-    text(s.client_full_name.toUpperCase(), ml, y); y += 5
-    normal(9); color(GRAY)
-    text(s.client_address_street.toUpperCase(), ml, y); y += 4
-    text(`${s.client_address_city.toUpperCase()}, ${s.client_address_state.toUpperCase()} ${s.client_address_zip}`, ml, y); y += 4
-    text(s.client_phone, ml, y); y += 7
+    // PRO-SE / NOT DETAINED at top
+    bold(12); left('PRO-SE'); right('NOT DETAINED'); y += 7
 
-    bold(9); color(BLACK)
-    text('UNITED STATES DEPARTMENT OF JUSTICE', pw / 2, y, { align: 'center' }); y += 4
-    text('EXECUTIVE OFFICE FOR IMMIGRATION REVIEW', pw / 2, y, { align: 'center' }); y += 5
-    normal(9); color(GRAY)
-    text(s.current_court_street, pw / 2, y, { align: 'center' }); y += 4
-    text(s.current_court_city_state_zip, pw / 2, y, { align: 'center' }); y += 5
+    // Client info
+    bold(12); left(s.client_full_name.toUpperCase()); y += 6
+    normal(12)
+    left(s.client_address_street.toUpperCase()); y += 5
+    left(`${s.client_address_city.toUpperCase()} ${s.client_address_state.toUpperCase()} -${s.client_address_zip}`); y += 5
+    left(s.client_phone); y += 10
 
-    line()
+    // DOJ header
+    bold(13); center('UNITED STATES DEPARTMENT OF JUSTICE'); y += 5
+    bold(12); center('EXECUTIVE OFFICE FOR IMMIGRATION REVIEW'); y += 8
+
+    // Court address centered, bold, underlined
+    bold(12)
+    underlineCenter(s.current_court_street, 12); y += 5
+    center(s.current_court_city_state_zip); y += 5
+    bold(13); center('IMMIGRATION COURTS'); y += 10
+
+    // Dashed separator line
+    dashedLine(ml, ml + cw * 0.6); y += 10
 
     // Case block
-    normal(9); color(BLACK)
-    text('In the Matter(s) of:', ml, y); y += 5
-    bold(9)
-    text(s.client_full_name.toUpperCase(), ml, y)
-    text(`File No.: ${s.file_number}`, pw - mr, y, { align: 'right' }); y += 6
-
-    // ORDER section
-    y += 4
-    bold(11); color(NAVY)
-    text('ORDER OF THE IMMIGRATION JUDGE', pw / 2, y, { align: 'center' }); y += 8
-
-    normal(9); color(BLACK)
-    // Checkbox items
-    text('\u25A1', ml, y)
-    const grantedLines = doc.splitTextToSize(
-      `The respondent\u2019s Motion to Change Venue is GRANTED. The case is transferred to: _______________`,
-      cw - 8
-    )
-    doc.text(grantedLines, ml + 6, y)
-    y += grantedLines.length * 4.2 + 4
-
-    text('\u25A1', ml, y)
-    const deniedLines = doc.splitTextToSize(
-      `The respondent\u2019s Motion to Change Venue is DENIED for the following reason(s): _______________`,
-      cw - 8
-    )
-    doc.text(deniedLines, ml + 6, y)
-    y += deniedLines.length * 4.2 + 8
-
-    text('Date: ___________________________', ml, y); y += 6
-    text('Immigration Judge: ___________________________', ml, y); y += 12
-
-    // Separator
-    line()
-    y += 4
-
-    // Certificate of Service
-    bold(11); color(NAVY)
-    text('CERTIFICATE OF SERVICE', pw / 2, y, { align: 'center' }); y += 8
-
-    paragraph(
-      `I hereby certify that on ${formatDateEnglish(s.document_date)}, a copy of the foregoing Respondent\u2019s Motion to Change Venue was served upon the Office of the Chief Counsel at:`
-    )
-
-    y += 1
-    normal(9); color(BLACK)
-    const counselLines = s.chief_counsel_address.split('\n')
-    counselLines.forEach(ln => {
-      text(ln, ml + 4, y); y += 4
-    })
+    normal(12); left('In Matter (s) of:'); y += 7
+    bold(12); left(s.client_full_name.toUpperCase())
+    normal(12)
+    doc.text(`File No.: `, pw / 2 + 5, y); bold(12); doc.text(s.file_number, pw / 2 + 5 + doc.getTextWidth('File No.: '), y)
     y += 6
+    normal(12); left('Respondent'); y += 5
+    italic(12); left('In Removal Proceedings'); y += 16
 
-    text(`Date: ${formatDateEnglish(s.document_date)}`, ml, y); y += 6
-    bold(9)
-    text(s.client_full_name.toUpperCase(), ml, y)
+    // Dashed separator line
+    dashedLine(ml, ml + cw * 0.65); y += 8
+
+    // Judge and hearing
+    italic(12)
+    left('Immigration Judge:', ml + 6)
+    right('Next Hearing:')
+    y += 6
+    bold(12); left(s.judge_name.toUpperCase(), ml + 6)
+    doc.text(formatHearingDateShort(s.next_hearing_date, s.next_hearing_time), pw - mr, y, { align: 'right' })
 
     // Save
     const safeName = s.client_full_name.replace(/[^a-zA-Z0-9]/g, '_')
