@@ -199,7 +199,7 @@ export function CambioCorteRow({ submission }: { submission: Submission }) {
     const boxX = ml
     const boxY = y - 2
     const boxW = cw * 0.65
-    const boxH = 42
+    const boxH = 54
 
     // Draw dashed border rectangle
     doc.setDrawColor(180, 120, 0); doc.setLineWidth(0.4)
@@ -224,7 +224,7 @@ export function CambioCorteRow({ submission }: { submission: Submission }) {
     y += 10
 
     normal(12); left('Respondent(s)', ml + 4); y += 5
-    italic(12); left('In removal proceedings.', ml + 4); y += 14
+    italic(12); left('In removal proceedings.', ml + 4); y += 10
 
     // Judge and hearing
     bold(12); left('Immigration Judge:')
