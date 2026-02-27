@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -18,6 +19,7 @@ interface Client {
   email: string
   phone: string
   created_at: string
+  case_count: number
 }
 
 export default function AdminClientsPage() {
@@ -33,11 +35,16 @@ export default function AdminClientsPage() {
     const supabase = createClient()
     const { data } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, email, phone, created_at')
+      .select('id, first_name, last_name, email, phone, created_at, cases(count)')
       .eq('role', 'client')
       .order('created_at', { ascending: false })
 
-    setClients(data || [])
+    const clientsWithCount = (data || []).map((c: any) => ({
+      ...c,
+      case_count: c.cases?.[0]?.count ?? 0,
+    }))
+
+    setClients(clientsWithCount)
     setLoading(false)
   }
 
@@ -84,6 +91,7 @@ export default function AdminClientsPage() {
                 <TableHead>Nombre</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Teléfono</TableHead>
+                <TableHead>Casos</TableHead>
                 <TableHead>Registrado</TableHead>
                 <TableHead className="w-[60px]"></TableHead>
               </TableRow>
@@ -91,22 +99,27 @@ export default function AdminClientsPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                     <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
               ) : clients.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                     No hay clientes registrados
                   </TableCell>
                 </TableRow>
               ) : (
                 clients.map((c) => (
                   <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.first_name} {c.last_name}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link href={`/admin/clients/${c.id}`} className="text-blue-600 hover:underline">
+                        {c.first_name} {c.last_name}
+                      </Link>
+                    </TableCell>
                     <TableCell>{c.email}</TableCell>
                     <TableCell>{c.phone}</TableCell>
+                    <TableCell className="text-sm text-gray-500">{c.case_count}</TableCell>
                     <TableCell className="text-sm text-gray-500">
                       {format(new Date(c.created_at), 'd MMM yyyy', { locale: es })}
                     </TableCell>
