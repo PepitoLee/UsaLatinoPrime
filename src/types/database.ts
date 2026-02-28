@@ -187,3 +187,59 @@ export interface EligibilityQuestion {
   min_selections?: number
   fail_message: string
 }
+
+// ── Appointments ──
+
+export type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show'
+
+export interface Appointment {
+  id: string
+  case_id: string
+  client_id: string
+  scheduled_at: string
+  duration_minutes: number
+  status: AppointmentStatus
+  reminder_1h_requested: boolean
+  reminder_24h_requested: boolean
+  reminder_1h_sent: boolean
+  reminder_24h_sent: boolean
+  cancelled_at?: string
+  cancellation_reason?: string
+  notes?: string
+  created_at: string
+  updated_at: string
+  // Joined fields
+  client?: Profile
+  case?: Case
+}
+
+export interface AppointmentToken {
+  id: string
+  client_id: string
+  case_id: string
+  token: string
+  is_active: boolean
+  created_at: string
+}
+
+export interface SchedulingConfig {
+  id: string
+  day_of_week: number
+  start_hour: number
+  end_hour: number
+  is_available: boolean
+}
+
+export interface SchedulingSettings {
+  id: string
+  zoom_link: string
+  slot_duration_minutes: number
+  updated_at: string
+}
+
+export interface BlockedDate {
+  id: string
+  blocked_date: string
+  reason?: string
+  created_at: string
+}

@@ -1,0 +1,112 @@
+import type { SchedulingConfig, Appointment } from '@/types/database'
+import { TIMEZONE } from './constants'
+
+/**
+ * Genera los slots disponibles para una fecha dada en Mountain Time.
+ * Filtra slots ocupados y slots ya pasados.
+ */
+export function getAvailableSlots(
+  date: string, // YYYY-MM-DD
+  config: SchedulingConfig[],
+  existingAppointments: Appointment[],
+  slotDurationMinutes: number = 60
+): string[] {
+  // Obtener el día de la semana en MT
+  const dateInMT = new Date(`${date}T12:00:00`)
+  const mtDate = new Date(dateInMT.toLocaleString('en-US', { timeZone: TIMEZONE }))
+  const dayOfWeek = mtDate.getDay()
+
+  const dayConfig = config.find(c => c.day_of_week === dayOfWeek)
+  if (!dayConfig || !dayConfig.is_available) return []
+
+  const slots: string[] = []
+  const now = new Date()
+
+  for (let hour = dayConfig.start_hour; hour < dayConfig.end_hour; hour++) {
+    // Crear el timestamp en MT
+    // Usamos un approach que funciona: crear la hora como si fuera MT
+    const slotDateStr = `${date}T${hour.toString().padStart(2, '0')}:00:00`
+
+    // Convertir a UTC para comparación
+    const slotInUTC = mtToUTC(slotDateStr)
+    if (!slotInUTC) continue
+
+    // Filtrar slots ya pasados
+    if (slotInUTC <= now) continue
+
+    // Filtrar slots ocupados
+    const isOccupied = existingAppointments.some(apt => {
+      const aptTime = new Date(apt.scheduled_at)
+      return Math.abs(aptTime.getTime() - slotInUTC.getTime()) < slotDurationMinutes * 60 * 1000
+    })
+
+    if (!isOccupied) {
+      slots.push(slotInUTC.toISOString())
+    }
+  }
+
+  return slots
+}
+
+/**
+ * Convierte una fecha/hora en Mountain Time a UTC.
+ */
+function mtToUTC(dateTimeStr: string): Date | null {
+  // Crear un Date interpretándolo como hora local, luego ajustar
+  // Usamos Intl para determinar el offset actual de MT
+  const tempDate = new Date(dateTimeStr + 'Z') // Start with UTC
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+
+  // Determinar el offset de MT para esta fecha
+  const parts = formatter.formatToParts(tempDate)
+  const getPart = (type: string) => parts.find(p => p.type === type)?.value || ''
+
+  const mtNow = new Date(
+    `${getPart('year')}-${getPart('month')}-${getPart('day')}T${getPart('hour')}:${getPart('minute')}:${getPart('second')}Z`
+  )
+
+  // El offset es la diferencia entre UTC y lo que MT muestra
+  const offsetMs = tempDate.getTime() - mtNow.getTime()
+
+  // Ahora creamos el Date correcto: la hora que queremos en MT + el offset
+  const [datePart, timePart] = dateTimeStr.split('T')
+  const target = new Date(`${datePart}T${timePart}Z`)
+
+  return new Date(target.getTime() + offsetMs)
+}
+
+/**
+ * Formatea una fecha UTC a hora de Mountain Time para display.
+ */
+export function formatToMT(isoString: string): string {
+  const date = new Date(isoString)
+  return date.toLocaleString('en-US', {
+    timeZone: TIMEZONE,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  })
+}
+
+/**
+ * Formatea una fecha UTC a fecha completa en Mountain Time.
+ */
+export function formatDateMT(isoString: string): string {
+  const date = new Date(isoString)
+  return date.toLocaleDateString('es-US', {
+    timeZone: TIMEZONE,
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+}
